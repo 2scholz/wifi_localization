@@ -8,6 +8,8 @@ find_package(catkin REQUIRED
             tf
             dynamic_reconfigure
             nav_msgs
+            std_msgs
+            message_generation
         )
 
 find_package(Boost REQUIRED)
@@ -15,6 +17,16 @@ find_package(Boost REQUIRED)
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/AMCL.cfg
+)
+
+add_message_files(
+        FILES
+        MaxWeight.msg
+)
+
+generate_messages(
+        DEPENDENCIES
+        std_msgs
 )
 
 catkin_package(
