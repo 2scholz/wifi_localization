@@ -22,6 +22,7 @@ class WifiPublisher:
             proc = Popen("sudo iw dev wlan0 scan | grep -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}|SSID|signal'", shell=True, stdout=PIPE, stderr=STDOUT)
             proc_out, proc_err = proc.communicate()
             result = self.parse_wifi_scan(proc_out)
+            time = rospy.Time.now()
             #print result
             ssids = []
             macs = []
@@ -31,6 +32,7 @@ class WifiPublisher:
                 macs.append(wifi.mac)
                 strengths.append(float(wifi.strength))
             wifistate_msg = WifiState()
+            wifistate_msg.header.stamp = time
             wifistate_msg.ssids = ssids
             wifistate_msg.macs = macs
             wifistate_msg.strengths = strengths
