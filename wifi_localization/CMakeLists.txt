@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+find_package(Boost REQUIRED)
+
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
@@ -47,6 +49,7 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 install(PROGRAMS
@@ -61,5 +64,6 @@ add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(wifi_data_collector
+        ${Boost_LIBRARIES}
         ${catkin_LIBRARIES}
         )
