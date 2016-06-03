@@ -44,6 +44,7 @@ private:
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold) : threshold_(threshold)
 {
+  ROS_INFO("Threshold at: %f",threshold_);
   time_t rawtime;
   struct tm *timeinfo;
   char buffer[80];
@@ -54,14 +55,14 @@ Subscriber::Subscriber(ros::NodeHandle &n, double threshold) : threshold_(thresh
   strftime(buffer, 80, "%d-%m-%Y %I:%M:%S", timeinfo);
   date_ = buffer;
 
-  boost::filesystem::path dir("./data/");
+  boost::filesystem::path dir("./wifi_data/");
 
   if (!(boost::filesystem::exists(dir)))
   {
     boost::filesystem::create_directory(dir);
   }
 
-  dir = "./data/" + date_;
+  dir = "./wifi_data/" + date_;
 
   if (!(boost::filesystem::exists(dir)))
   {
@@ -95,7 +96,7 @@ void Subscriber::callbackMethod(const wifi_localization::MaxWeight::ConstPtr &ma
       {
         std::string name = wifi_data_msg->macs.at(i);
         boost::shared_ptr<std::ofstream> new_mac = boost::make_shared<std::ofstream>();
-        new_mac->open(std::string("./data/" + date_ + "/" + name + ".csv").c_str());
+        new_mac->open(std::string("./wifi_data/" + date_ + "/" + name + ".csv").c_str());
         *new_mac << "macs, x, y, strengths, max_weight" << "\n";
         file = filemap_.insert(filemap_.begin(), std::make_pair(name, new_mac));
       }

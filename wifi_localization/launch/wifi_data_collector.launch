@@ -1,4 +1,5 @@
 <launch>
-    <node name="wifi_data_collector" pkg="wifi_localization" type="wifi_data_collector" />
-    <param name="threshold" type="double" value="0.5" />
+    <node name="wifi_data_collector" pkg="wifi_localization" type="wifi_data_collector" output="screen">
+        <param name="threshold" type="double" value="0.5" />
+    </node>
 </launch>
