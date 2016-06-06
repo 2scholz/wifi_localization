@@ -110,14 +110,13 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
 
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
-  ROS_INFO("callback");
   if (max_weight_ > threshold_ && !(user_input_ && !record_))
   {
-    ROS_INFO("In loop");
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
     {
       std::map<std::string, boost::shared_ptr<std::ofstream> >::iterator file = filemap_.find(
         wifi_data_msg->macs.at(i));
+
       if (file == filemap_.end())
       {
         std::string name = wifi_data_msg->macs.at(i);
@@ -126,9 +125,12 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
         *new_mac << "macs, x, y, strengths, max_weight" << "\n";
         file = filemap_.insert(filemap_.begin(), std::make_pair(name, new_mac));
       }
+
       *(file->second) << wifi_data_msg->macs.at(i) << "," << pos_x_ << ","
       << pos_y_ << "," << wifi_data_msg->strengths.at(i) << "," << max_weight_
       << "\n";
+
+      file->second->flush();
     }
     if(record_)
     {
@@ -200,7 +202,7 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-      if(sub->isRecording())
+      if(!sub->isRecording())
       {
         int c = getch();
         if(c == 10)
