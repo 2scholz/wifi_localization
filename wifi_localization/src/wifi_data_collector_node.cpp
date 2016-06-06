@@ -15,11 +15,8 @@
 #include "wifi_localization/MaxWeight.h"
 #include "wifi_localization/WifiState.h"
 
-bool g_record = false;
-
 typedef message_filters::sync_policies::ApproximateTime<wifi_localization::MaxWeight,
-  geometry_msgs::PoseWithCovarianceStamped,
-  wifi_localization::WifiState> g_sync_policy;
+  geometry_msgs::PoseWithCovarianceStamped> g_sync_policy;
 
 /*
  * Subscriber class
@@ -30,22 +27,27 @@ class Subscriber
 {
 public:
   Subscriber(ros::NodeHandle &n, double threshold, bool user_input);
-  void record_next();
+  void recordNext();
+  bool& isRecording();
 
 private:
   message_filters::Subscriber<wifi_localization::MaxWeight> *max_weight_sub_;
   message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> *pose_sub_;
-  message_filters::Subscriber<wifi_localization::WifiState> *wifi_data_sub_;
+  ros::Subscriber wifi_data_sub_;
   message_filters::Synchronizer<g_sync_policy> *sync_;
   double threshold_;
   bool user_input_;
   bool record_;
   std::string date_;
+  double pos_x_;
+  double pos_y_;
+  double max_weight_;
   std::map<std::string, boost::shared_ptr<std::ofstream> > filemap_;
 
-  void callbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
-                      const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg,
-                      const wifi_localization::WifiState::ConstPtr &wifi_data_msg);
+  void amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
+                      const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg);
+
+  void wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg);
 };
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input) :
@@ -81,25 +83,35 @@ Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input) :
 
   max_weight_sub_ = new message_filters::Subscriber<wifi_localization::MaxWeight>(n, "max_weight", 100);
   pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(n, "amcl_pose", 100);
-  wifi_data_sub_ = new message_filters::Subscriber<wifi_localization::WifiState>(n, "wifi_state", 1);
+  wifi_data_sub_ = n.subscribe("wifi_state", 1, &Subscriber::wifiCallbackMethod, this);
 
-  sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(1000), *max_weight_sub_, *pose_sub_,
-                                                           *wifi_data_sub_);
-  sync_->registerCallback(boost::bind(&Subscriber::callbackMethod, this, _1, _2, _3));
+  sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(100), *max_weight_sub_, *pose_sub_);
+  sync_->registerCallback(boost::bind(&Subscriber::amclCallbackMethod, this, _1, _2));
 }
 
-void Subscriber::record_next()
+void Subscriber::recordNext()
 {
   record_ = true;
 }
 
+bool& Subscriber::isRecording()
+{
+  return record_;
+}
+
 //The callback method
-void Subscriber::callbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
-                                const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg,
-                                const wifi_localization::WifiState::ConstPtr &wifi_data_msg)
+void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
+                                const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg)
+{
+  pos_x_ = pose_msg->pose.pose.position.x;
+  pos_y_ = pose_msg->pose.pose.position.y;
+  max_weight_ = max_weight_msg->max_weight;
+}
+
+void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
   ROS_INFO("callback");
-  if (max_weight_msg->max_weight > threshold_ && !(user_input_ && !record_))
+  if (max_weight_ > threshold_ && !(user_input_ && !record_))
   {
     ROS_INFO("In loop");
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
@@ -114,21 +126,20 @@ void Subscriber::callbackMethod(const wifi_localization::MaxWeight::ConstPtr &ma
         *new_mac << "macs, x, y, strengths, max_weight" << "\n";
         file = filemap_.insert(filemap_.begin(), std::make_pair(name, new_mac));
       }
-      *(file->second) << wifi_data_msg->macs.at(i) << "," << pose_msg->pose.pose.position.x << ","
-      << pose_msg->pose.pose.position.y << "," << wifi_data_msg->strengths.at(i) << "," << max_weight_msg->max_weight
+      *(file->second) << wifi_data_msg->macs.at(i) << "," << pos_x_ << ","
+      << pos_y_ << "," << wifi_data_msg->strengths.at(i) << "," << max_weight_
       << "\n";
     }
     if(record_)
     {
       record_ = false;
-      g_record = false;
       ROS_INFO("Recording successful.");
     }
   }
 }
 
 // Function that checks for user input.
-long getch()
+char getch()
 {
   fd_set set;
   struct timeval timeout;
@@ -179,21 +190,28 @@ int main(int argc, char **argv)
 
   Subscriber *sub = new Subscriber(n, threshold, user_input);
 
-  ros::Rate r(100);
-  while (ros::ok())
+  if(!user_input)
   {
-    if(user_input && !g_record)
+    ros::spin();
+  }
+  else
+  {
+    ros::Rate r(100);
+
+    while (ros::ok())
     {
-      int c = getch();
-      if(c == 10)
+      if(sub->isRecording())
       {
-        ROS_INFO("Record next set of data.");
-        g_record = true;
-        sub->record_next();
+        int c = getch();
+        if(c == 10)
+        {
+          ROS_INFO("Record next set of data.");
+          sub->recordNext();
+        }
       }
+      ros::spinOnce();
+      r.sleep();
     }
-    ros::spinOnce();
-    r.sleep();
   }
 
   delete sub;
