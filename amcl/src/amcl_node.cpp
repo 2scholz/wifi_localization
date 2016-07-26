@@ -1325,7 +1325,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       }
       // Report the overall filter covariance, rather than the
       // covariance for the highest-weight cluster
-      //p.covariance[6*5+5] = hyps[max_weight_hyp].pf_pose_cov.m[2][2];
+      // p.covariance[6*5+5] = hyps[max_weight_hyp].pf_pose_cov.m[2][2];
       p.pose.covariance[6*5+5] = set->cov.m[2][2];
 
       /*
@@ -1343,7 +1343,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
       amcl::MaxWeight max_weight_msg;
       max_weight_msg.header.stamp = p.header.stamp;
-      max_weight_msg.max_weight = max_weight;
+      max_weight_msg.max_weight = max_weight * set->sample_count;//pf_->sets[pf_->current_set].sample_count;
       max_weight_pub_.publish(max_weight_msg);
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",

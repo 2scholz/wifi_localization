@@ -14,6 +14,8 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include "wifi_localization/MaxWeight.h"
 #include "wifi_localization/WifiState.h"
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/GetMap.h>
 
 typedef message_filters::sync_policies::ApproximateTime<wifi_localization::MaxWeight,
   geometry_msgs::PoseWithCovarianceStamped> g_sync_policy;
@@ -31,10 +33,13 @@ public:
   bool& isRecording();
 
 private:
+  ros::NodeHandle &n_;
+
   message_filters::Subscriber<wifi_localization::MaxWeight> *max_weight_sub_;
   message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> *pose_sub_;
   ros::Subscriber wifi_data_sub_;
   message_filters::Synchronizer<g_sync_policy> *sync_;
+
   double threshold_;
   bool user_input_;
   bool record_;
@@ -42,7 +47,16 @@ private:
   double pos_x_;
   double pos_y_;
   double max_weight_;
+  nav_msgs::OccupancyGrid amcl_map_;
+  int map_height_;
+  int map_width_;
+  double map_resolution_;
+  double map_origin_x_;
+  double map_origin_y_;
+
+
   std::map<std::string, boost::shared_ptr<std::ofstream> > filemap_;
+  std::map<std::string, std::pair<nav_msgs::OccupancyGrid, ros::Publisher> > wifi_map_pubs_;
 
   void amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
                       const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg);
@@ -51,7 +65,7 @@ private:
 };
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input) :
-  threshold_(threshold), user_input_(user_input), record_(false)
+  threshold_(threshold), user_input_(user_input), record_(false), n_(n)
 {
   ROS_INFO("Threshold at: %f",threshold_);
   time_t rawtime;
@@ -87,6 +101,28 @@ Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input) :
 
   sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(100), *max_weight_sub_, *pose_sub_);
   sync_->registerCallback(boost::bind(&Subscriber::amclCallbackMethod, this, _1, _2));
+
+  nav_msgs::GetMap srv_map;
+
+  ros::ServiceClient map_service_client = n.serviceClient<nav_msgs::GetMap>("static_map");
+
+  if (map_service_client.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    amcl_map_ = srv_map.response.map;
+  }
+  else
+  {
+    ROS_ERROR("Failed to call map service");
+    return;
+  }
+
+  amcl_map_.data.erase(amcl_map_.data.begin(), amcl_map_.data.end());
+  map_height_ = amcl_map_.info.height;
+  map_width_ = amcl_map_.info.width;
+  map_resolution_ = amcl_map_.info.resolution;
+  map_origin_x_ = amcl_map_.info.origin.position.x;
+  map_origin_y_ = amcl_map_.info.origin.position.y;
 }
 
 void Subscriber::recordNext()
@@ -117,18 +153,39 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       std::map<std::string, boost::shared_ptr<std::ofstream> >::iterator file = filemap_.find(
         wifi_data_msg->macs.at(i));
 
+      std::map<std::string, std::pair<nav_msgs::OccupancyGrid, ros::Publisher> >::iterator map = wifi_map_pubs_.find(wifi_data_msg->macs.at(i));
+
+      // If the file for this mac address doesn't exist yet, it is going to be created.
       if (file == filemap_.end())
       {
         std::string name = wifi_data_msg->macs.at(i);
         boost::shared_ptr<std::ofstream> new_mac = boost::make_shared<std::ofstream>();
         new_mac->open(std::string("./wifi_data/" + date_ + "/" + name + ".csv").c_str());
-        *new_mac << "macs, x, y, strengths, max_weight" << "\n";
+        *new_mac << "x, y, strengths" << "\n";
         file = filemap_.insert(filemap_.begin(), std::make_pair(name, new_mac));
+
+        ros::Publisher wifi_map_pub = n_.advertise<nav_msgs::OccupancyGrid>(name, 1000);
+        map = wifi_map_pubs_.insert(wifi_map_pubs_.begin(), std::make_pair(name, std::make_pair(amcl_map_, wifi_map_pub)));
       }
 
-      *(file->second) << wifi_data_msg->macs.at(i) << "," << pos_x_ << ","
-      << pos_y_ << "," << wifi_data_msg->strengths.at(i) << "," << max_weight_
-      << "\n";
+      *(file->second) << pos_x_ << "," << pos_y_ << "," << wifi_data_msg->strengths.at(i) << "\n";
+
+      std::vector<int8_t>::iterator cell = map->second.first.data.begin();
+      std::advance(cell, int((pos_x_/map_resolution_) + (pos_y_*map_width_)));
+
+      // convert the dbm values of the wifi strength to percentage values.
+      int quality;
+
+      if(wifi_data_msg->strengths.at(i) <= -100)
+        quality = 0;
+      else if(wifi_data_msg->strengths.at(i) >= -50)
+        quality = 100;
+      else
+        quality = 2 * (wifi_data_msg->strengths.at(i) + 100);
+
+      map->second.first.data.insert(cell, quality);
+
+      map->second.second.publish(map->second.first);
 
       file->second->flush();
     }

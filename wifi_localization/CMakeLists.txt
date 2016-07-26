@@ -40,17 +40,24 @@ generate_messages(
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES rpc_game
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
   CATKIN_DEPENDS message_runtime
 )
 
+include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
+
+include_directories(include/gaussian_process)
+include_directories(include)
+
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
 )
+
+include_directories(EIGEN3_INCLUDE_DIR)
 
 install(PROGRAMS
   scripts/wifi_map_builder.py
