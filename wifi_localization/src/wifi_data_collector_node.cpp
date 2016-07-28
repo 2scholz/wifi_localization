@@ -24,6 +24,8 @@ struct Map_data{
   boost::shared_ptr<std::ofstream> file_;
   nav_msgs::OccupancyGrid map_;
   ros::Publisher pub_;
+  int min;
+  int max;
 };
 
 /*
@@ -57,14 +59,6 @@ private:
   nav_msgs::OccupancyGrid amcl_map_;
   nav_msgs::OccupancyGrid my_map_;
 
-  // TODO: delete the variables that aren't used.
-  int map_height_;
-  int map_width_;
-  float map_resolution_;
-  double map_origin_x_;
-  double map_origin_y_;
-
-
   // mappings of the csv files and occupancy grids/publishers to the macs of the access points.
   std::map<std::string, boost::shared_ptr<std::ofstream> > filemap_;
   std::map<std::string, std::pair<nav_msgs::OccupancyGrid, ros::Publisher> > wifi_map_pubs_;
@@ -77,7 +71,7 @@ private:
 };
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution) :
-  threshold_(threshold), user_input_(user_input), record_(false), n_(n), map_resolution_(map_resolution)
+  threshold_(threshold), user_input_(user_input), record_(false), n_(n)
 {
   ROS_INFO("Threshold at: %f",threshold_);
   time_t rawtime;
@@ -129,25 +123,12 @@ Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input, fl
     return;
   }
   my_map_ = amcl_map_;
-  my_map_.info.resolution = map_resolution_;
-  my_map_.info.width = (unsigned int)((amcl_map_.info.width * amcl_map_.info.resolution)/map_resolution_);
-  my_map_.info.height = (unsigned int)((amcl_map_.info.height * amcl_map_.info.resolution)/map_resolution_);
+  my_map_.info.resolution = map_resolution;
+  my_map_.info.width = (unsigned int)((amcl_map_.info.width * amcl_map_.info.resolution)/my_map_.info.resolution);
+  my_map_.info.height = (unsigned int)((amcl_map_.info.height * amcl_map_.info.resolution)/my_map_.info.resolution);
   my_map_.data.resize(my_map_.info.width * my_map_.info.height);
 
-  /*
-  std::fill(amcl_map_.data.begin(), amcl_map_.data.end(), -1);
-  map_height_ = amcl_map_.info.height;
-  map_width_ = amcl_map_.info.width;
-  map_resolution_ = amcl_map_.info.resolution;
-  map_origin_x_ = amcl_map_.info.origin.position.x;
-  map_origin_y_ = amcl_map_.info.origin.position.y;
-   */
-
   std::fill(my_map_.data.begin(), my_map_.data.end(), -1);
-  map_height_ = my_map_.info.height;
-  map_width_ = my_map_.info.width;
-  map_origin_x_ = my_map_.info.origin.position.x;
-  map_origin_y_ = my_map_.info.origin.position.y;
 }
 
 void Subscriber::recordNext()
@@ -199,6 +180,8 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
         temp.file_ = new_mac;
         temp.map_ = my_map_;
         temp.pub_ = wifi_map_pub;
+        temp.min = 100;
+        temp.max = 0;
         data = mac_map_.insert(mac_map_.begin(), std::make_pair(mac_name, temp));
       }
 
@@ -210,7 +193,7 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       int grid_x = (int)((pos_x_ - data->second.map_.info.origin.position.x) / data->second.map_.info.resolution);
       int grid_y = (int)((pos_y_ - data->second.map_.info.origin.position.y) / data->second.map_.info.resolution);
 
-      int cell_pos = grid_x + (grid_y*map_width_);
+      int cell_pos = grid_x + (grid_y*data->second.map_.info.width);
 
       // convert the dbm values of the wifi strength to percentage values.
       int8_t quality;
@@ -222,19 +205,12 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       else
         quality = 2 * (int(wifi_dbm) + 100);
 
+      if(quality < data->second.min)
+        data->second.min = quality;
+      else if(quality > data->second.max)
+        data->second.max = quality;
 
       data->second.map_.data.at(cell_pos) = quality;
-
-      /*
-      std::cout << "quality: " << int(quality) << std::endl;
-      int count = 0;
-      for(std::vector<int8_t>::iterator j = data->second.map_.data.begin(); j < data->second.map_.data.end(); j++)
-      {
-        if(*j != -1)
-          count++;
-      }
-      std::cout << "count: " << count << std::endl;
-       */
 
       // publish the occupancy grid
       data->second.pub_.publish(data->second.map_);
@@ -297,7 +273,7 @@ int main(int argc, char **argv)
   n.param("/wifi_data_collector/threshold", threshold, threshold);
   n.param("/wifi_data_collector/user_input", user_input, user_input);
 
-  Subscriber *sub = new Subscriber(n, threshold, user_input, 0.10);
+  Subscriber *sub = new Subscriber(n, threshold, user_input, 0.20);
 
   // If user-input mode is deactivated there is no need to check for user input.
   if(!user_input)
