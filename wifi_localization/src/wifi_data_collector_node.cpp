@@ -16,11 +16,12 @@
 #include "wifi_localization/WifiState.h"
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/GetMap.h>
+#include <std_srvs/Empty.h>
 
 typedef message_filters::sync_policies::ApproximateTime<wifi_localization::MaxWeight,
   geometry_msgs::PoseWithCovarianceStamped> g_sync_policy;
 
-struct Map_data{
+struct MapData{
   boost::shared_ptr<std::ofstream> file_;
   nav_msgs::OccupancyGrid map_;
   ros::Publisher pub_;
@@ -40,6 +41,8 @@ public:
   Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution);
   void recordNext();
   bool& isRecording();
+  bool publish_map_service(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+
 
 private:
   ros::NodeHandle &n_;
@@ -48,6 +51,8 @@ private:
   message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> *pose_sub_;
   ros::Subscriber wifi_data_sub_;
   message_filters::Synchronizer<g_sync_policy> *sync_;
+
+  ros::ServiceServer wifi_map_service;
 
   double threshold_;
   bool user_input_;
@@ -61,13 +66,15 @@ private:
 
   // mappings of the csv files and occupancy grids/publishers to the macs of the access points.
   std::map<std::string, boost::shared_ptr<std::ofstream> > filemap_;
-  std::map<std::string, std::pair<nav_msgs::OccupancyGrid, ros::Publisher> > wifi_map_pubs_;
-  std::map<std::string, Map_data> mac_map_;
+  std::map<std::string, MapData> mac_map_;
 
   void amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
                       const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg);
 
   void wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg);
+
+
+  double distance(int cell0, int cell1);
 };
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution) :
@@ -129,6 +136,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input, fl
   my_map_.data.resize(my_map_.info.width * my_map_.info.height);
 
   std::fill(my_map_.data.begin(), my_map_.data.end(), -1);
+  //wifi_map_service = n_.advertiseService("pub_wifi_maps",&publish_map_service);
 }
 
 void Subscriber::recordNext()
@@ -148,7 +156,6 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
   pos_x_ = pose_msg->pose.pose.position.x;
   pos_y_ = pose_msg->pose.pose.position.y;
   max_weight_ = max_weight_msg->max_weight;
-  std::cout << "pos_x: " << pos_x_ << std::endl;
 }
 
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
@@ -161,7 +168,7 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       std::string mac_name = wifi_data_msg->macs.at(i);
       double wifi_dbm = wifi_data_msg->strengths.at(i);
 
-      std::map<std::string, Map_data>::iterator data = mac_map_.find(mac_name);
+      std::map<std::string, MapData>::iterator data = mac_map_.find(mac_name);
 
       // If there is no entry for this mac address yet, it is going to be created.
       if(data == mac_map_.end())
@@ -176,7 +183,7 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
 
         ros::Publisher wifi_map_pub = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name, 1000, true);
 
-        Map_data temp;
+        MapData temp;
         temp.file_ = new_mac;
         temp.map_ = my_map_;
         temp.pub_ = wifi_map_pub;
@@ -213,7 +220,7 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       data->second.map_.data.at(cell_pos) = quality;
 
       // publish the occupancy grid
-      data->second.pub_.publish(data->second.map_);
+      // data->second.pub_.publish(data->second.map_);
     }
     if(record_)
     {
@@ -221,6 +228,37 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       ROS_INFO("Recording successful.");
     }
   }
+}
+
+bool Subscriber::publish_map_service(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+  for(std::map<std::string, MapData>::iterator i = mac_map_.begin(); i != mac_map_.end(); i++)
+  {
+    // Create a new grid and scale the numbers to 0 - 100 according to their min and max values.
+    nav_msgs::OccupancyGrid scaled_map = i->second.map_;
+
+    for(std::vector<int8_t>::iterator j = scaled_map.data.begin(); j != scaled_map.data.end();j++)
+    {
+      if(*j != -1)
+      {
+        *j = ((*j - i->second.min)*100)/(i->second.max - i->second.min);
+      }
+    }
+
+
+    i->second.pub_.publish(scaled_map);
+  }
+  return true;
+}
+
+double Subscriber::distance(int cell0, int cell1)
+{
+  double x0 = cell0%my_map_.info.width;
+  double x1 = cell1%my_map_.info.width;
+  double y0 = int(cell0/my_map_.info.width);
+  double y1 = int(cell1/my_map_.info.width);
+  double d = sqrt(pow(x1-x0,2) + pow(y1-y0,2));
+  return d;
 }
 
 // Function that checks for user input.
@@ -274,6 +312,8 @@ int main(int argc, char **argv)
   n.param("/wifi_data_collector/user_input", user_input, user_input);
 
   Subscriber *sub = new Subscriber(n, threshold, user_input, 0.20);
+
+  ros::ServiceServer wifi_maps = n.advertiseService("publish_wifi_maps", &Subscriber::publish_map_service, sub);
 
   // If user-input mode is deactivated there is no need to check for user input.
   if(!user_input)
