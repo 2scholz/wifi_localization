@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(wifi_localization)
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  #grid_map_ros
   std_msgs
   message_generation
   message_filters
@@ -40,7 +42,7 @@ generate_messages(
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES rpc_game
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
@@ -50,7 +52,7 @@ catkin_package(
 # include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
 
 # include_directories(include/gaussian_process)
-# include_directories(include)
+include_directories(include)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
@@ -66,7 +68,7 @@ install(PROGRAMS
 )
 
 ## Declare a C++ executable
-add_executable(wifi_data_collector src/wifi_data_collector_node.cpp)
+add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp)
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
