@@ -15,27 +15,13 @@
 #include "wifi_localization/WifiState.h"
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
+#include "mapdata.h"
+#include "mapcollection.h"
 
 typedef message_filters::sync_policies::ApproximateTime<wifi_localization::MaxWeight,
 geometry_msgs::PoseWithCovarianceStamped> g_sync_policy;
-
-struct MapData{
-  boost::shared_ptr<std::ofstream> file_;
-  std::vector<std::vector<int> > map_;
-  ros::Publisher pub_;
-  ros::Publisher pub2_;
-  int min;
-  int max;
-  int get_value(int x, int y)
-  {
-    try {
-      return map_.at(x).at(y);
-    }
-    catch (const std::out_of_range& e) {
-      return -1;
-    }
-  }
-};
 
 /*
  * Subscriber class
@@ -46,11 +32,9 @@ struct MapData{
 class Subscriber
 {
 public:
-  Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution);
+  Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution, std::string path_to_csv = "");
   void recordNext();
   bool& isRecording();
-  bool publish_map_service(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-
 
 private:
   ros::NodeHandle &n_;
@@ -60,29 +44,29 @@ private:
   ros::Subscriber wifi_data_sub_;
   message_filters::Synchronizer<g_sync_policy> *sync_;
 
-  ros::ServiceServer wifi_map_service;
-
   double threshold_;
   bool user_input_;
+  bool record_user_input_;
   bool record_;
-  std::string date_;
+  bool record_next_;
   double pos_x_;
   double pos_y_;
   double max_weight_;
-  nav_msgs::OccupancyGrid empty_map_;
 
   // mappings of the csv files and occupancy grids/publishers to the macs of the access points.
-  std::map<std::string, MapData> mac_map_;
+  // std::map<std::string, MapData> mac_map_;
+  MapCollection maps;
+  ros::ServiceServer recording_service;
+  ros::ServiceServer record_next_signal_service;
 
   void amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr &max_weight_msg,
                           const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg);
 
   void wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg);
 
+  bool recording(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
-  double distance(int cell0, int cell1);
-
-  void insert_grid_distance_value(std::vector<std::pair<double, int> > &distance_value, int x1, int y1, int x2, int y2, int value);
+  bool record_next_signal(std_srvs::Trigger::Response &req, std_srvs::Trigger::Response &res);
 };
 
 #endif //PROJECT_SUBSCRIBER_H

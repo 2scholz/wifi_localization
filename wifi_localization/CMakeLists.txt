@@ -68,7 +68,7 @@ install(PROGRAMS
 )
 
 ## Declare a C++ executable
-add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp)
+add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp src/mapdata.cpp src/mapcollection.cpp)
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against

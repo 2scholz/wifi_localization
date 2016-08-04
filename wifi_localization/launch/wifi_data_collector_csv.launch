@@ -1,0 +1,7 @@
+<launch>
+    <node name="wifi_data_collector" pkg="wifi_localization" type="wifi_data_collector" output="screen">
+        <param name="threshold" type="double" value="0.0" />
+        <param name="user_input" type="bool" value="false" />
+        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/BachelorArbeit/catkin_ws/wifi_data/folder" />
+    </node>
+</launch>
