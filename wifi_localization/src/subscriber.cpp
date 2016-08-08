@@ -3,12 +3,9 @@
 //
 
 #include "subscriber.h"
-// #include <grid_map_ros/grid_map_ros.hpp>
-// #include <grid_map_cv/grid_map_cv.hpp>
 #include <fstream>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
-// #include <cv_bridge/cv_bridge.h>
 
 Subscriber::Subscriber(ros::NodeHandle &n, double threshold, bool user_input, float map_resolution, std::string path_to_csv) :
   threshold_(threshold), user_input_(user_input), record_user_input_(false), n_(n), maps(n, path_to_csv), record_(false), record_next_(false)
@@ -57,31 +54,6 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
 
       maps.add_data(mac_name, pos_x_, pos_y_, wifi_dbm);
 
-      /*
-      std::map<std::string, MapData>::iterator data = mac_map_.find(mac_name);
-
-      // If there is no entry for this mac address yet, it is going to be created.
-      if(data == mac_map_.end())
-      {
-        boost::shared_ptr<std::ofstream> new_mac = boost::make_shared<std::ofstream>();
-        new_mac->open(std::string("./wifi_data/" + date_ + "/" + mac_name + ".csv").c_str());
-        *new_mac << "x, y, strengths" << "\n";
-
-        // ros won't allow topics with ':' in them, so they have to be replaced in the mac address.
-        std::string mac_pub_name = "/" + mac_name;
-        std::replace( mac_pub_name.begin(), mac_pub_name.end(), ':', '_');
-
-        ros::Publisher wifi_map_pub = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_li", 1000, true);
-        ros::Publisher wifi_map_pub_2 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_ln", 1000, true);
-        ros::Publisher wifi_map_pub_3 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_gi", 1000, true);
-        ros::Publisher wifi_map_pub_4 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_gn", 1000, true);
-
-        MapData temp(new_mac, wifi_map_pub, wifi_map_pub_2, wifi_map_pub_3, wifi_map_pub_4);
-        data = mac_map_.insert(mac_map_.begin(), std::make_pair(mac_name, temp));
-      }
-
-      data->second.insert_data(pos_x_, pos_y_, wifi_dbm);
-    */
     }
     if(record_user_input_)
     {

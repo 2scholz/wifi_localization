@@ -97,32 +97,9 @@ std::map<std::string, MapData>::iterator MapCollection::get_map(std::string mac)
 
 bool MapCollection::publish_map_service(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
-  std::cout << "called" << std::endl;
   for(std::map<std::string, MapData>::iterator i = mac_map_.begin(); i != mac_map_.end(); i++)
   {
-    std::cout << "publish map" << std::endl;
     i->second.publish_maps();
-
-    /*
-    grid_map::GridMap grid_map({"original", "filtered"});
-    grid_map.setFrameId("map");
-    grid_map.setGeometry(grid_map::Length(empty_map_.info.width, empty_map_.info.height), empty_map_.info.resolution);
-    grid_map::GridMapRosConverter::fromOccupancyGrid(pub_map2, "original", grid_map);
-
-    cv::Mat originalImage;
-    grid_map::GridMapCvConverter::toImage<unsigned short, 1>(grid_map, "original", CV_8UC1, 0.0, 255.0, originalImage);
-
-    cv::Mat newImage;
-    cv::GaussianBlur(originalImage, newImage, cv::Size(5,5), 0);
-
-    grid_map::GridMapCvConverter::addLayerFromImage(newImage, "blur", grid_map, 0.0, 255.0);
-
-    // Create OpenCV window.
-    // cv::namedWindow("OpenCV Demo");
-    // cv::imshow("OpenCV Demo", originalImage);
-    // cv::waitKey(40);
-    number++;
-     */
   }
   return true;
 }

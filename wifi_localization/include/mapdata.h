@@ -36,9 +36,10 @@ public:
 private:
   boost::shared_ptr<std::ofstream> file_;
 
-  std::vector<std::vector<int> > map_;
+  std::vector<std::vector<std::vector<int> > > map_;
   std::vector<std::vector<int> > normalized_map_;
   std::vector<std::vector<int> > interpolated_map_;
+  nav_msgs::OccupancyGrid gauss_map_;
 
   ros::Publisher local_minmax_interpol_pub_;
   ros::Publisher local_minmax_norm_pub_;
@@ -48,6 +49,7 @@ private:
   int local_max_;
   void normalize_map(int min, int max);
   void interpolate_map();
+  void gauss_filter();
   nav_msgs::OccupancyGrid convert_to_grid(std::vector<std::vector<int> > map);
 
   void insert_grid_distance_value(std::vector<std::pair<double, int> > &distance_value, int x1, int y1, int x2, int y2, int value);

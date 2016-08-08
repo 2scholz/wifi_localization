@@ -5,7 +5,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  #grid_map_ros
+  grid_map_ros
   std_msgs
   message_generation
   message_filters
@@ -49,7 +49,7 @@ catkin_package(
   CATKIN_DEPENDS message_runtime
 )
 
-# include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
+include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
 
 # include_directories(include/gaussian_process)
 include_directories(include)

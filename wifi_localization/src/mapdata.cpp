@@ -4,6 +4,11 @@
 #include <vector>
 #include "mapdata.h"
 #include <fstream>
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_cv/grid_map_cv.hpp>
+#include <grid_map_core/grid_map_core.hpp>
+#include <grid_map_cv/GridMapCvConverter.hpp>
+#include <eigen3/Eigen/Core>
 
 int MapData::global_min_ = 100;
 int MapData::global_max_ = 0;
@@ -14,11 +19,12 @@ MapData::MapData(boost::shared_ptr<std::ofstream> file, ros::Publisher local_min
                  ros::Publisher global_minmax_norm_pub, int local_min, int local_max) :
   file_(file), local_minmax_interpol_pub_(local_minmax_interpol_pub), local_minmax_norm_pub_(local_minmax_norm_pub),
   global_minmax_interpol_pub_(global_minmax_interpol_pub), global_minmax_norm_pub_(global_minmax_norm_pub),
-  local_min_(local_min), local_max_(local_max), map_(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1)),
+  local_min_(local_min), local_max_(local_max),
+  map_(empty_map_.info.width, std::vector<std::vector<int> >(empty_map_.info.height, std::vector<int>(0))),
   normalized_map_(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1)),
   interpolated_map_(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1))
 {
-
+  gauss_map_ = empty_map_;
 }
 
 
@@ -27,11 +33,15 @@ void MapData::publish_maps()
   normalize_map(local_min_, local_max_);
   local_minmax_norm_pub_.publish(convert_to_grid(normalized_map_));
   interpolate_map();
+  // gauss_filter();
   local_minmax_interpol_pub_.publish(convert_to_grid(interpolated_map_));
+  // local_minmax_interpol_pub_.publish(gauss_map_);
   normalize_map(global_min_, global_max_);
   global_minmax_norm_pub_.publish(convert_to_grid(normalized_map_));
   interpolate_map();
+  // gauss_filter();
   global_minmax_interpol_pub_.publish(convert_to_grid(interpolated_map_));
+  // global_minmax_interpol_pub_.publish(gauss_map_);
 }
 
 void MapData::insert_data(double x, double y, double wifi_signal)
@@ -71,7 +81,8 @@ void MapData::insert_data(double x, double y, double wifi_signal)
       MapData::global_max_ = quality;
   }
 
-  map_[grid_x][grid_y] = quality;
+  map_.at(grid_x).at(grid_y).push_back(quality);
+  // map_[grid_x][grid_y] = quality;
 }
 
 void MapData::load_csv_data(std::string path)
@@ -118,7 +129,7 @@ void MapData::insert_grid_distance_value(std::vector<std::pair<double, int> > &d
 
 void MapData::normalize_map(int min, int max)
 {
-  normalized_map_ = map_;
+  // normalized_map_ = map_;
 
   int min_max_diff = (max - min);
   if(min_max_diff == 0)
@@ -129,14 +140,22 @@ void MapData::normalize_map(int min, int max)
   {
     for (int k=0;k<map_[j].size(); k++)
     {
+      /*
       if(map_[j][k] != -1)
       {
         normalized_map_[j][k] = ((map_[j][k] - min)*100)/min_max_diff;
+      }
+       */
+      if(!map_.at(j).at(k).empty())
+      {
+        int val = std::round(std::accumulate(map_.at(j).at(k).begin(), map_.at(j).at(k).end(), 0)/double(map_.at(j).at(k).size()));
+        normalized_map_[j][k] = ((val - min)*100)/min_max_diff;
       }
     }
   }
 }
 
+// Interpolates the normalized map.
 void MapData::interpolate_map()
 {
   interpolated_map_ = normalized_map_;
@@ -180,6 +199,25 @@ void MapData::interpolate_map()
       }
     }
   }
+}
+
+// Uses gauss filter on normalized map.
+void MapData::gauss_filter()
+{
+  interpolated_map_ = normalized_map_;
+  grid_map::GridMap grid_map({"original", "filtered"});
+  grid_map.setFrameId("map");
+  grid_map.setGeometry(grid_map::Length(empty_map_.info.width, empty_map_.info.height), empty_map_.info.resolution);
+  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(interpolated_map_), "original", grid_map);
+
+  cv::Mat originalImage;
+  grid_map::GridMapCvConverter::toImage<unsigned short, 1>(grid_map, "original", CV_8UC1, -1.0f, 100.0, originalImage);
+
+  cv::Mat newImage;
+  cv::GaussianBlur(originalImage, newImage, cv::Size(3,3), 0.0);
+
+  grid_map::GridMapCvConverter::addLayerFromImage<unsigned short, 1>(newImage, "blur", grid_map, 0.0, 100.0);
+  grid_map::GridMapRosConverter::toOccupancyGrid(grid_map, "blur", 0.0, 100.0, gauss_map_);
 }
 
 nav_msgs::OccupancyGrid MapData::convert_to_grid(std::vector<std::vector<int> > map)
