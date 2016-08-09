@@ -16,32 +16,24 @@ nav_msgs::OccupancyGrid MapData::empty_map_ = nav_msgs::OccupancyGrid();
 
 MapData::MapData(boost::shared_ptr<std::ofstream> file, ros::Publisher local_minmax_interpol_pub,
                  ros::Publisher local_minmax_norm_pub, ros::Publisher global_minmax_interpol_pub,
-                 ros::Publisher global_minmax_norm_pub, int local_min, int local_max) :
+                 ros::Publisher global_minmax_norm_pub) :
   file_(file), local_minmax_interpol_pub_(local_minmax_interpol_pub), local_minmax_norm_pub_(local_minmax_norm_pub),
   global_minmax_interpol_pub_(global_minmax_interpol_pub), global_minmax_norm_pub_(global_minmax_norm_pub),
-  local_min_(local_min), local_max_(local_max),
-  map_(empty_map_.info.width, std::vector<std::vector<int> >(empty_map_.info.height, std::vector<int>(0))),
-  normalized_map_(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1)),
-  interpolated_map_(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1))
+  local_min_(100), local_max_(0),
+  map_(empty_map_.info.width, std::vector<std::vector<int> >(empty_map_.info.height, std::vector<int>(0)))
 {
-  gauss_map_ = empty_map_;
+
 }
 
 
 void MapData::publish_maps()
 {
-  normalize_map(local_min_, local_max_);
-  local_minmax_norm_pub_.publish(convert_to_grid(normalized_map_));
-  interpolate_map();
-  // gauss_filter();
-  local_minmax_interpol_pub_.publish(convert_to_grid(interpolated_map_));
-  // local_minmax_interpol_pub_.publish(gauss_map_);
-  normalize_map(global_min_, global_max_);
-  global_minmax_norm_pub_.publish(convert_to_grid(normalized_map_));
-  interpolate_map();
-  // gauss_filter();
-  global_minmax_interpol_pub_.publish(convert_to_grid(interpolated_map_));
-  // global_minmax_interpol_pub_.publish(gauss_map_);
+  std::vector<std::vector<int> > normalized_map = normalize_map(local_min_, local_max_);
+  local_minmax_norm_pub_.publish(convert_to_grid(normalized_map));
+  local_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
+  normalized_map = normalize_map(global_min_, global_max_);
+  global_minmax_norm_pub_.publish(convert_to_grid(normalized_map));
+  global_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
 }
 
 void MapData::insert_data(double x, double y, double wifi_signal)
@@ -127,6 +119,7 @@ void MapData::insert_grid_distance_value(std::vector<std::pair<double, int> > &d
   }
 }
 
+/*
 void MapData::normalize_map(int min, int max)
 {
   // normalized_map_ = map_;
@@ -140,31 +133,27 @@ void MapData::normalize_map(int min, int max)
   {
     for (int k=0;k<map_[j].size(); k++)
     {
-      /*
-      if(map_[j][k] != -1)
-      {
-        normalized_map_[j][k] = ((map_[j][k] - min)*100)/min_max_diff;
-      }
-       */
       if(!map_.at(j).at(k).empty())
       {
         int val = std::round(std::accumulate(map_.at(j).at(k).begin(), map_.at(j).at(k).end(), 0)/double(map_.at(j).at(k).size()));
-        normalized_map_[j][k] = ((val - min)*100)/min_max_diff;
+        normalized_map[j][k] = ((val - min)*100)/min_max_diff;
       }
     }
   }
 }
+*/
 
+/*
 // Interpolates the normalized map.
 void MapData::interpolate_map()
 {
-  interpolated_map_ = normalized_map_;
+  interpolated_map_ = normalized_map;
 
-  for(int j=0;j<normalized_map_.size(); j++)
+  for(int j=0;j<normalized_map.size(); j++)
   {
-    for (int k=0;k<normalized_map_[j].size(); k++)
+    for (int k=0;k<normalized_map[j].size(); k++)
     {
-      if(normalized_map_[j][k] == -1)
+      if(normalized_map[j][k] == -1)
       {
         std::vector<std::pair<double, int> > distance_value;
         int l = 1;
@@ -200,25 +189,7 @@ void MapData::interpolate_map()
     }
   }
 }
-
-// Uses gauss filter on normalized map.
-void MapData::gauss_filter()
-{
-  interpolated_map_ = normalized_map_;
-  grid_map::GridMap grid_map({"original", "filtered"});
-  grid_map.setFrameId("map");
-  grid_map.setGeometry(grid_map::Length(empty_map_.info.width, empty_map_.info.height), empty_map_.info.resolution);
-  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(interpolated_map_), "original", grid_map);
-
-  cv::Mat originalImage;
-  grid_map::GridMapCvConverter::toImage<unsigned short, 1>(grid_map, "original", CV_8UC1, -1.0f, 100.0, originalImage);
-
-  cv::Mat newImage;
-  cv::GaussianBlur(originalImage, newImage, cv::Size(3,3), 0.0);
-
-  grid_map::GridMapCvConverter::addLayerFromImage<unsigned short, 1>(newImage, "blur", grid_map, 0.0, 100.0);
-  grid_map::GridMapRosConverter::toOccupancyGrid(grid_map, "blur", 0.0, 100.0, gauss_map_);
-}
+*/
 
 nav_msgs::OccupancyGrid MapData::convert_to_grid(std::vector<std::vector<int> > map)
 {
@@ -233,4 +204,82 @@ nav_msgs::OccupancyGrid MapData::convert_to_grid(std::vector<std::vector<int> > 
   }
 
   return grid;
+}
+
+std::vector<std::vector<int> > MapData::normalize_map(int min, int max)
+{
+  std::vector<std::vector<int> > normalized_map(empty_map_.info.width, std::vector<int>(empty_map_.info.height, -1));
+
+  int min_max_diff = (max - min);
+  if(min_max_diff == 0)
+  {
+    min_max_diff = 1;
+  }
+  for(int j=0;j<map_.size(); j++)
+  {
+    for (int k=0;k<map_[j].size(); k++)
+    {
+      if(!map_.at(j).at(k).empty())
+      {
+        int val = std::round(std::accumulate(map_.at(j).at(k).begin(), map_.at(j).at(k).end(), 0)/double(map_.at(j).at(k).size()));
+        normalized_map[j][k] = ((val - min)*100)/min_max_diff;
+      }
+    }
+  }
+  return normalized_map;
+}
+
+std::vector<std::vector<int> > MapData::interpolate_map(const std::vector<std::vector<int> > &normalized_map)
+{
+  std::vector<std::vector<int> > interpolated_map = normalized_map;
+
+  for(int j=0;j<normalized_map.size(); j++)
+  {
+    for (int k=0;k<normalized_map[j].size(); k++)
+    {
+      if(normalized_map[j][k] == -1)
+      {
+        std::vector<std::pair<double, int> > distance_value;
+        int l = 1;
+
+        // Search for cells around the empty cell, for cells that contain values.
+        do
+        {
+          insert_grid_distance_value(distance_value, j, k, j+l, k, get_value(normalized_map, j+l,k));
+          insert_grid_distance_value(distance_value, j, k, j-l, k, get_value(normalized_map, j-l,k));
+          insert_grid_distance_value(distance_value, j, k, j, k+l, get_value(normalized_map, j,k+l));
+          insert_grid_distance_value(distance_value, j, k, j, k-l, get_value(normalized_map, j,k-l));
+          for(int m = 1; m < l+1; m++)
+          {
+            insert_grid_distance_value(distance_value, j, k, j-m, k+l, get_value(normalized_map, j-m,k+l));
+            insert_grid_distance_value(distance_value, j, k, j+m, k+l, get_value(normalized_map, j+m,k+l));
+            insert_grid_distance_value(distance_value, j, k, j-m, k-l, get_value(normalized_map, j-m,k-l));
+            insert_grid_distance_value(distance_value, j, k, j+m, k-l, get_value(normalized_map, j+m,k-l));
+          }
+          l++;
+        }while(l < 3);
+
+        // compute the inverse distance weighting
+        double new_value1 = 0;
+        double new_value2 = 0;
+
+        for(int m = 0; m < distance_value.size(); m++)
+        {
+          new_value1 += distance_value.at(m).second/distance_value.at(m).first;
+          new_value2 += 1/distance_value.at(m).first;
+        }
+
+        int new_value = int(new_value1/new_value2);
+
+        // If there were no occupied cells found nearby, the cell is going to be set to -1 (unknown)
+        if(distance_value.empty())
+        {
+          new_value = -1;
+        }
+
+        interpolated_map[j][k] = new_value;
+      }
+    }
+  }
+  return interpolated_map;
 }

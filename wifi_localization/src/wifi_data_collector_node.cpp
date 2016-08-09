@@ -43,20 +43,16 @@ char getch()
   return (buff);
 }
 
+/**
+ * Creates the NodeHandle and the Subscriber object.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv)
 {
-  bool user_input = false;
-  double threshold = 0.0;
-  std::string path_to_csv = "";
-
   ros::init(argc, argv, "wifi_data_collector");
   ros::NodeHandle n;
-
-  n.param("/wifi_data_collector/threshold", threshold, threshold);
-  n.param("/wifi_data_collector/user_input", user_input, user_input);
-  n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
-
-  std::cout << path_to_csv << std::endl;
 
   nav_msgs::GetMap srv_map;
 
@@ -82,7 +78,10 @@ int main(int argc, char **argv)
 
   std::fill(MapData::empty_map_.data.begin(), MapData::empty_map_.data.end(), -1);
 
-  Subscriber *sub = new Subscriber(n, threshold, user_input, 0.20, path_to_csv);
+  Subscriber *sub = new Subscriber(n, 0.20);
+
+  bool user_input;
+  n.param("/wifi_data_collector/user_input", user_input, user_input);
 
   // If user-input mode is deactivated there is no need to check for user input.
   if(!user_input)
