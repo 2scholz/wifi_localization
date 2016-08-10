@@ -5,11 +5,11 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  grid_map_ros
   std_msgs
   message_generation
   message_filters
   sensor_msgs
+  actionlib
 )
 
 find_package(Boost REQUIRED)
@@ -49,7 +49,7 @@ catkin_package(
   CATKIN_DEPENDS message_runtime
 )
 
-include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
+# include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
 
 # include_directories(include/gaussian_process)
 include_directories(include)
@@ -69,10 +69,19 @@ install(PROGRAMS
 
 ## Declare a C++ executable
 add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp src/mapdata.cpp src/mapcollection.cpp)
+add_executable(map_traverser src/map_traverser_node.cpp)
+
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(wifi_data_collector
+        ${Boost_LIBRARIES}
+        ${catkin_LIBRARIES}
+        )
+
+target_link_libraries(map_traverser
         ${Boost_LIBRARIES}
         ${catkin_LIBRARIES}
         )

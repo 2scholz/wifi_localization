@@ -11,6 +11,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   record_user_input_(false), n_(n), maps(n), record_(false), record_next_(false), stands_still_(false),
   user_input_(false), record_only_stopped_(false), threshold_(0.0)
 {
+  recorded_since_stop.data = false;
   std::string path_to_csv = "";
 
   n.param("/wifi_data_collector/threshold", threshold_, threshold_);
@@ -26,6 +27,8 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(n, "amcl_pose", 100);
   wifi_data_sub_ = n.subscribe("wifi_state", 1, &Subscriber::wifiCallbackMethod, this);
   odom_sub_ = n.subscribe("odom",1, &Subscriber::odomCallbackMethod, this);
+
+  recorded_since_stop_pub_ = n.advertise<std_msgs::Bool>("recorded_since_stop", 1, true);
 
   sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(100), *max_weight_sub_, *pose_sub_);
   sync_->registerCallback(boost::bind(&Subscriber::amclCallbackMethod, this, _1, _2));
@@ -56,7 +59,7 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
   // Only record the data if max_weight is big enough and if user input mode is activated only if the user pressed the key to record.
-  if (((max_weight_ > threshold_ && !(user_input_ && !record_user_input_)) || (max_weight_ > threshold_ && record_) || (max_weight_ > threshold_ && record_next_)) && (!record_only_stopped_||stands_still_))
+  if ((((max_weight_ > threshold_ && (user_input_ && record_user_input_)) || (max_weight_ > threshold_ && record_) || (max_weight_ > threshold_ && record_next_)) && (!record_only_stopped_||stands_still_)) && !wifi_data_msg->macs.empty())
   {
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
     {
@@ -80,6 +83,12 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
     {
       sc.play(sound_play::SoundRequest::NEEDS_UNPLUGGING);
     }
+    ROS_INFO("Recorded new data.");
+    if(stands_still_)
+    {
+      recorded_since_stop.data = true;
+      recorded_since_stop_pub_.publish(recorded_since_stop);
+    }
   }
 }
 
@@ -87,6 +96,11 @@ void Subscriber::odomCallbackMethod(const nav_msgs::Odometry::ConstPtr &msg)
 {
   stands_still_ =
           msg->twist.twist.linear.x == 0.0 && msg->twist.twist.linear.y == 0.0 && msg->twist.twist.angular.z == 0.0;
+  if(!stands_still_)
+  {
+    recorded_since_stop.data = false;
+    recorded_since_stop_pub_.publish(recorded_since_stop);
+  }
 }
 
 bool Subscriber::recording(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)

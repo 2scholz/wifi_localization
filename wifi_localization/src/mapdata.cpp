@@ -4,10 +4,10 @@
 #include <vector>
 #include "mapdata.h"
 #include <fstream>
-#include <grid_map_ros/grid_map_ros.hpp>
-#include <grid_map_cv/grid_map_cv.hpp>
-#include <grid_map_core/grid_map_core.hpp>
-#include <grid_map_cv/GridMapCvConverter.hpp>
+// #include <grid_map_ros/grid_map_ros.hpp>
+// #include <grid_map_cv/grid_map_cv.hpp>
+// #include <grid_map_core/grid_map_core.hpp>
+// #include <grid_map_cv/GridMapCvConverter.hpp>
 #include <eigen3/Eigen/Core>
 
 int MapData::global_min_ = 100;

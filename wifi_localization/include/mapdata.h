@@ -43,7 +43,7 @@ public:
    * @param y y position of cell
    * @return value in cell, or -1 if out of bounds
    */
-  int get_value(std::vector<std::vector<int> > map, int x, int y)
+  int get_value(const std::vector<std::vector<int> > &map, int x, int y)
   {
     try {
       return map.at(x).at(y);

@@ -18,6 +18,7 @@
 #include <std_srvs/Empty.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
+#include <std_msgs/Bool.h>
 #include "mapdata.h"
 #include "mapcollection.h"
 #include <sound_play/sound_play.h>
@@ -68,6 +69,9 @@ private:
   /// Subscriber for odometry data. Used to check if the robot is stopped.
   ros::Subscriber odom_sub_;
 
+  /// Publishes if the robot recorded data since the robot stopped.
+  ros::Publisher recorded_since_stop_pub_;
+
   /// Synchronizes the poses and max weights, both sent by amcl
   message_filters::Synchronizer<g_sync_policy> *sync_;
 
@@ -97,6 +101,9 @@ private:
 
   /// Should the robot play sounds whenever it recorded data?
   bool play_sound_;
+
+  /// Did the robot record data since it last stopped?
+  std_msgs::Bool recorded_since_stop;
 
   /// Last received x position
   double pos_x_;
