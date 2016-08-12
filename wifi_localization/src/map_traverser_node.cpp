@@ -8,27 +8,15 @@
 #include <std_msgs/Bool.h>
 #include <eigen3/Eigen/Core>
 
-std::pair<double, double> fRand(double p1_x, double p1_y, double p2_x, double p2_y, double p3_x, double p3_y)
+Eigen::Vector2d random_position(const Eigen::Vector2d &A, const Eigen::Vector2d &AB, const Eigen::Vector2d &AC)
 {
-  double f = (double)rand() / RAND_MAX;
-  double u = 0.0 + f * (1.0 - 0.0);
-  f = (double)rand() / RAND_MAX;
-  double v = 0.0 + f * (1.0 - 0.0);
+  double u = (double)rand() / RAND_MAX;
+  double v = (double)rand() / RAND_MAX;
 
-  double p_x = p1_x + u*(p2_x - p1_x) + v*(p3_x - p1_x);
-  double p_y = p1_y + u*(p2_y - p1_y) + v*(p3_y - p1_y);
-  return std::make_pair(p_x, p_y);
+  return (A + u*AB + v*AC);
 }
 
-std::pair<double, double> step_vector(double p1_x, double p1_y, double p2_x, double p2_y, double p3_x, double p3_y,
-                                      double step_length)
-{
-  double step_right = sqrt(step_length)/(pow((p2_x-p1_x),2)+pow(p2_y - p1_y,2));
-  double step_down = sqrt(step_length)/(pow((p3_x-p1_x),2)+pow(p3_y - p1_y,2));
-  return std::make_pair(step_right, step_down);
-}
-
-std::pair<Eigen::Vector2d, Eigen::Vector2d> step_vector(Eigen::Vector2d AB, Eigen::Vector2d AC, double step_length)
+std::pair<Eigen::Vector2d, Eigen::Vector2d> step_vector(const Eigen::Vector2d &AB, const Eigen::Vector2d &AC, double step_length)
 {
   Eigen::Vector2d step_right = (sqrt(step_length)/(pow(AB(0),2)+pow(AB(1),2))) * AB;
   Eigen::Vector2d step_down = (sqrt(step_length)/(pow(AC(0),2)+pow(AC(1),2))) * AC;
@@ -88,6 +76,13 @@ int main(int argc, char **argv)
   Eigen::Vector2d AB = B - A;
   Eigen::Vector2d AC = C - A;
 
+  Eigen::Vector2d unit1 = {1.0, 0.0};
+  Eigen::Vector2d unit2 = {0.0, -1.0};
+
+  Eigen::Vector2d A2 = {0.0, 0.0};
+  Eigen::Vector2d AB2 = AB.norm()*unit1;
+  Eigen::Vector2d AC2 = AC.norm()*unit2;
+
   MoveBaseClient ac("move_base", true);
 
   ros::Rate r(10);
@@ -96,34 +91,27 @@ int main(int argc, char **argv)
 
   if(ordered)
   {
-    /*
-    std::pair<double, double> steps = step_vector(p1_x, p1_y, p2_x, p2_y, p3_x, p3_y, 0.20);
-    double step_right_x = steps.first * (p2_x - p1_x);
-    double step_right_y = steps.first * (p2_y - p1_y);
-    double step_down_x = steps.second * (p3_x - p1_x);
-    double step_down_y = steps.second * (p3_y - p1_y);
-     */
-    std::pair<Eigen::Vector2d, Eigen::Vector2d> step_vectors = step_vector(AB, AC, 0.20);
+    std::pair<Eigen::Vector2d, Eigen::Vector2d> step_vectors = step_vector(AB, AC, step_size);
     Eigen::Vector2d step_right = step_vectors.first;
     Eigen::Vector2d step_down = step_vectors.second;
 
-    /*
-    double step_right_angle = acos(step_right_x/sqrt(pow(step_right_x,2)+pow(step_right_y,2)));
-    double step_down_angle = acos(step_right_x/sqrt(pow(step_down_x,2)+pow(step_down_y,2)));
-    */
-    double step_right_angle = acos(step_right(0)/step_right.norm());
-    double step_down_angle = acos(step_down(0)/step_down.norm());
 
-    /*
-    double vector_right_length = sqrt(pow((p2_x - p1_x),2) + pow((p2_y - p1_y),2));
-    double vector_down_lenght = sqrt(pow((p3_x - p1_x),2) + pow((p3_y - p1_y),2));
-    */
-    double angle = 0.0;
+    double step_right_angle = fmod(atan2(step_right(1), step_right(0)), (2.0*M_PI));
+    double step_down_angle = fmod(atan2(step_down(1), step_down(0)), (2.0*M_PI));
+
+    double angle_z = 0.0;
+    double angle_w = 0.0;
 
     if(AB.norm() > AC.norm())
-      angle = step_right_angle;
+    {
+      angle_z = sin(step_right_angle/2.0);
+      angle_w = cos(step_right_angle/2.0);
+    }
     else
-      angle = step_down_angle;
+    {
+      angle_z = sin(step_down_angle/2.0);
+      angle_w = cos(step_down_angle/2.0);
+    }
 
     // First drive to the start point, which is the upper left corner of the square.
     double pos_x = p1_x;
@@ -133,11 +121,15 @@ int main(int argc, char **argv)
     goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.pose.position.x = pos_x;
     goal.target_pose.pose.position.y = pos_y;
-    goal.target_pose.pose.orientation.w = angle;
-    ac.sendGoal(goal);
-    ac.waitForResult();
+    goal.target_pose.pose.orientation.z = angle_z;
+    goal.target_pose.pose.orientation.w = angle_w;
+
+    ROS_INFO("Reached.");
 
     Eigen::Vector2d pos = A;
+    Eigen::Vector2d check_pos = A2;
+    Eigen::Vector2d check_step_right = {step_size, 0.0};
+    Eigen::Vector2d check_step_down = {0.0, -step_size};
 
     int sign = 1;
 
@@ -145,89 +137,54 @@ int main(int argc, char **argv)
     {
       if(data_recorded.data_recorded)
       {
-        if(AB.norm() > AC.norm())
-        {
-          if(((pos(0) + step_right(0)) > (A(0) +AB(0) + AC(0))) || ((pos(1) + step_right(1)) > (A(1) +AB(1) + AC(1))))
-          {
-            if(((pos(0) + step_down(0)) > (A(0) +AB(0) + AC(0))) || ((pos(1) + step_down(1)) > (A(1) +AB(1) + AC(1))))
-            {
-              ROS_INFO("Map was fully traversed.");
-              return 0;
-            }
-            pos = pos + step_down;
-            sign = -1 * sign;
-          }
-          else
-          {
-            pos = pos + sign * step_right;
-          }
-        }
-        else
-        {
-          if(((pos(0) + step_down(0)) > (A(0) +AB(0) + AC(0))) || ((pos(1) + step_down(1)) > (A(1) +AB(1) + AC(1))))
-          {
-            if(((pos(0) + step_right(0)) > (A(0) +AB(0) + AC(0))) || ((pos(1) + step_right(1)) > (A(1) +AB(1) + AC(1))))
-            {
-              ROS_INFO("Map was fully traversed.");
-              return 0;
-            }
-            pos = pos + step_right;
-            sign = -1 * sign;
-          }
-          else
-          {
-            pos = pos + sign * step_down;
-          }
-        }
-
-        /*
-        if(vector_right_length > vector_down_lenght)
-        {
-          if((pos_x + step_right_x) > (p1_x +(p2_x - p1_x) + (p3_x - p1_x)) || (pos_y+step_right_y) > (p1_y+(p2_y - p1_y)+(p3_y - p1_y)))
-          {
-            if((pos_x + step_down_x) > (p1_x +(p2_x - p1_x) + (p3_x - p1_x)) || (pos_y+step_down_y) > (p1_y+(p2_y - p1_y)+(p3_y - p1_y)))
-            {
-              ROS_INFO("Map was fully traversed.");
-              return 0;
-            }
-            pos_x = pos_x + step_down_x;
-            pos_y = pos_y + step_down_y;
-            sign = -1 * sign;
-          }
-          else
-          {
-            pos_x = pos_x + sign * step_right_x;
-            pos_y = pos_y + sign * step_right_y;
-          }
-        }
-        else
-        {
-          if((pos_x + step_down_x) > (p1_x +(p2_x - p1_x) + (p3_x - p1_x)) || (pos_y+step_down_y) > (p1_y+(p2_y - p1_y)+(p3_y - p1_y)))
-          {
-            if((pos_x + step_right_x) > (p1_x +(p2_x - p1_x) + (p3_x - p1_x)) || (pos_y+step_right_y) > (p1_y+(p2_y - p1_y)+(p3_y - p1_y)))
-            {
-              ROS_INFO("Map was fully traversed.");
-              return 0;
-            }
-            pos_x = pos_x + step_down_x;
-            pos_y = pos_y + step_down_y;
-            sign = -1 * sign;
-          }
-          else
-          {
-            pos_x = pos_x + sign * step_down_x;
-            pos_y = pos_y + sign * step_down_y;
-          }
-        }
-        */
         move_base_msgs::MoveBaseGoal goal;
         goal.target_pose.header.frame_id = "/map";
         goal.target_pose.header.stamp = ros::Time::now();
         goal.target_pose.pose.position.x = pos(0);
         goal.target_pose.pose.position.y = pos(1);
-        goal.target_pose.pose.orientation.w = sign * angle;
+        goal.target_pose.pose.orientation.z = sign * angle_z;
+        goal.target_pose.pose.orientation.w = angle_w;
         ac.sendGoal(goal);
         ac.waitForResult();
+
+        if(AB.norm() > AC.norm())
+        {
+          if((check_pos(0) + sign * check_step_right(0) > AB2(0))||(check_pos(1) + sign * check_step_right(1) < AC(1)))
+          {
+            if((check_pos(0) + check_step_down(0) > AB2(0))||(check_pos(1) + check_step_down(1) < AC(1)))
+            {
+              ROS_INFO("Map was fully traversed.");
+              return 0;
+            }
+            pos = pos + step_down;
+            check_pos = check_pos + check_step_down;
+            sign = -1 * sign;
+          }
+          else
+          {
+            pos = pos + sign * step_right;
+            check_pos = check_pos + sign * check_step_right;
+          }
+        }
+        else
+        {
+          if((check_pos(0) + sign * check_step_down(0) > AB2(0))||(check_pos(1) + sign * check_step_down(1) < AC(1)))
+          {
+            if((check_pos(0) + check_step_right(0) > AB2(0))||(check_pos(1) + check_step_right(1) < AC(1)))
+            {
+              ROS_INFO("Map was fully traversed.");
+              return 0;
+            }
+            pos = pos + step_right;
+            check_pos = check_pos + check_step_right;
+            sign = -1 * sign;
+          }
+          else
+          {
+            pos = pos + sign * step_down;
+            check_pos = check_pos + sign * check_step_down;
+          }
+        }
       }
       ros::spinOnce();
       r.sleep();
@@ -239,9 +196,9 @@ int main(int argc, char **argv)
     {
       if(data_recorded.data_recorded)
       {
-        std::pair<double, double> goal_point = fRand(p1_x, p1_y, p2_x, p2_y, p3_x, p3_y);
-        double pos_x = goal_point.first;
-        double pos_y = goal_point.second;
+        Eigen::Vector2d goal_point = random_position(A, AB, AC);
+        double pos_x = goal_point(0);
+        double pos_y = goal_point(1);
         move_base_msgs::MoveBaseGoal goal;
         goal.target_pose.header.frame_id = "/map";
         goal.target_pose.header.stamp = ros::Time::now();

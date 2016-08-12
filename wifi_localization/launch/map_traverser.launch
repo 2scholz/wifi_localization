@@ -6,5 +6,6 @@
         <param name="p2_y" type="double" value="7.67" />
         <param name="p3_x" type="double" value="-5.0" />
         <param name="p3_y" type="double" value="0.0" />
+        <param name="ordered" type="bool" value="false" />
     </node>
 </launch>
