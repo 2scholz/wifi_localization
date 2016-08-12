@@ -70,9 +70,11 @@ install(PROGRAMS
 ## Declare a C++ executable
 add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp src/mapdata.cpp src/mapcollection.cpp)
 add_executable(map_traverser src/map_traverser_node.cpp)
+add_executable(wifi_localization src/wifi_localization_node.cpp src/gaussian_process/gaussian_process.cpp src/gaussian_process/kernel.cpp src/gaussian_process/optimizer.cpp)
 
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wifi_localization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
@@ -82,6 +84,11 @@ target_link_libraries(wifi_data_collector
         )
 
 target_link_libraries(map_traverser
+        ${Boost_LIBRARIES}
+        ${catkin_LIBRARIES}
+        )
+
+target_link_libraries(wifi_localization
         ${Boost_LIBRARIES}
         ${catkin_LIBRARIES}
         )

@@ -36,7 +36,6 @@ public:
   bool data_recorded;
 };
 
-
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 int main(int argc, char **argv)
