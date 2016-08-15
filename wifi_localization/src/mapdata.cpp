@@ -4,10 +4,6 @@
 #include <vector>
 #include "mapdata.h"
 #include <fstream>
-// #include <grid_map_ros/grid_map_ros.hpp>
-// #include <grid_map_cv/grid_map_cv.hpp>
-// #include <grid_map_core/grid_map_core.hpp>
-// #include <grid_map_cv/GridMapCvConverter.hpp>
 #include <eigen3/Eigen/Core>
 
 int MapData::global_min_ = 100;
@@ -74,7 +70,6 @@ void MapData::insert_data(double x, double y, double wifi_signal)
   }
 
   map_.at(grid_x).at(grid_y).push_back(quality);
-  // map_[grid_x][grid_y] = quality;
 }
 
 void MapData::load_csv_data(std::string path)
@@ -118,78 +113,6 @@ void MapData::insert_grid_distance_value(std::vector<std::pair<double, int> > &d
     distance_value.push_back(std::make_pair(distance, value));
   }
 }
-
-/*
-void MapData::normalize_map(int min, int max)
-{
-  // normalized_map_ = map_;
-
-  int min_max_diff = (max - min);
-  if(min_max_diff == 0)
-  {
-    min_max_diff = 1;
-  }
-  for(int j=0;j<map_.size(); j++)
-  {
-    for (int k=0;k<map_[j].size(); k++)
-    {
-      if(!map_.at(j).at(k).empty())
-      {
-        int val = std::round(std::accumulate(map_.at(j).at(k).begin(), map_.at(j).at(k).end(), 0)/double(map_.at(j).at(k).size()));
-        normalized_map[j][k] = ((val - min)*100)/min_max_diff;
-      }
-    }
-  }
-}
-*/
-
-/*
-// Interpolates the normalized map.
-void MapData::interpolate_map()
-{
-  interpolated_map_ = normalized_map;
-
-  for(int j=0;j<normalized_map.size(); j++)
-  {
-    for (int k=0;k<normalized_map[j].size(); k++)
-    {
-      if(normalized_map[j][k] == -1)
-      {
-        std::vector<std::pair<double, int> > distance_value;
-        int l = 1;
-
-        // Search for cells around the empty cell, for cells that contain values.
-        do
-        {
-          insert_grid_distance_value(distance_value, j, k, j+l, k, get_value(j+l,k));
-          insert_grid_distance_value(distance_value, j, k, j-l, k, get_value(j-l,k));
-          insert_grid_distance_value(distance_value, j, k, j, k+l, get_value(j,k+l));
-          insert_grid_distance_value(distance_value, j, k, j, k-l, get_value(j,k-l));
-          for(int m = 1; m < l+1; m++)
-          {
-            insert_grid_distance_value(distance_value, j, k, j-m, k+l, get_value(j-m,k+l));
-            insert_grid_distance_value(distance_value, j, k, j+m, k+l, get_value(j+m,k+l));
-            insert_grid_distance_value(distance_value, j, k, j-m, k-l, get_value(j-m,k-l));
-            insert_grid_distance_value(distance_value, j, k, j+m, k-l, get_value(j+m,k-l));
-          }
-          l++;
-        }while(l < 3);
-
-        // compute the inverse distance weighting
-        double new_value1 = 0;
-        double new_value2 = 0;
-        for(int m = 0; m < distance_value.size(); m++)
-        {
-          new_value1 += distance_value.at(m).second/distance_value.at(m).first;
-          new_value2 += 1/distance_value.at(m).first;
-        }
-        int new_value = int(new_value1/new_value2);
-        interpolated_map_[j][k] = new_value;
-      }
-    }
-  }
-}
-*/
 
 nav_msgs::OccupancyGrid MapData::convert_to_grid(std::vector<std::vector<int> > map)
 {

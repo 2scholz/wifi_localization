@@ -141,7 +141,7 @@ int main(int argc, char **argv)
         goal.target_pose.header.stamp = ros::Time::now();
         goal.target_pose.pose.position.x = pos(0);
         goal.target_pose.pose.position.y = pos(1);
-        goal.target_pose.pose.orientation.z = sign * angle_z;
+        goal.target_pose.pose.orientation.z = angle_z;
         goal.target_pose.pose.orientation.w = angle_w;
         ac.sendGoal(goal);
         ac.waitForResult();
@@ -158,6 +158,9 @@ int main(int argc, char **argv)
             pos = pos + step_down;
             check_pos = check_pos + check_step_down;
             sign = -1 * sign;
+            step_right_angle = fmod(atan2(sign*step_right(1), sign*step_right(0)), (2.0*M_PI));
+            angle_z = sin(step_right_angle/2.0);
+            angle_w = cos(step_right_angle/2.0);
           }
           else
           {
@@ -177,6 +180,9 @@ int main(int argc, char **argv)
             pos = pos + step_right;
             check_pos = check_pos + check_step_right;
             sign = -1 * sign;
+            step_down_angle = fmod(atan2(sign*step_down(1), sign*step_down(0)), (2.0*M_PI));
+            angle_z = sin(step_down_angle/2.0);
+            angle_w = cos(step_down_angle/2.0);
           }
           else
           {
