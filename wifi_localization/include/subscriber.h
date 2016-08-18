@@ -75,9 +75,6 @@ private:
   /// Synchronizes the poses and max weights, both sent by amcl
   message_filters::Synchronizer<g_sync_policy> *sync_;
 
-  /// Can be used to play sounds whenever new data was recorded
-  sound_play::SoundClient sc;
-
   /// Data is only recorded when the incoming max weight is higher than the threshold
   double threshold_;
 
@@ -98,9 +95,6 @@ private:
 
   /// Is the robot stopped?
   bool stands_still_;
-
-  /// Should the robot play sounds whenever it recorded data?
-  bool play_sound_;
 
   /// Did the robot record data since it last stopped?
   std_msgs::Bool recorded_since_stop;

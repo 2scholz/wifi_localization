@@ -79,10 +79,6 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       record_next_ = false;
       ROS_INFO("Recording successful.");
     }
-    if(play_sound_)
-    {
-      sc.play(sound_play::SoundRequest::NEEDS_UNPLUGGING);
-    }
     ROS_INFO("Recorded new data.");
     if(stands_still_)
     {
