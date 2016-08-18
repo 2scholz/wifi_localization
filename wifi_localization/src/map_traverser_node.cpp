@@ -49,6 +49,7 @@ int main(int argc, char **argv)
   double p2_y = 0.0;
   double p3_x = 0.0;
   double p3_y = 0.0;
+  double angle = -100.0;
 
   bool ordered = false;
   double step_size = 0.20;
@@ -61,6 +62,7 @@ int main(int argc, char **argv)
   n.param("/map_traverser/p3_y", p3_y, p3_y);
   n.param("/map_traverser/ordered", ordered, ordered);
   n.param("/map_traverser/step_size", step_size, step_size);
+  n.param("/map_traverser/angle", angle, angle);
 
   if(p1_x == 0.0 && p1_y == 0.0 && p2_x == 0.0 && p2_y == 0.0 && p3_x == 0.0 && p3_y == 0.0)
   {
@@ -101,7 +103,12 @@ int main(int argc, char **argv)
     double angle_z = 0.0;
     double angle_w = 0.0;
 
-    if(AB.norm() > AC.norm())
+    if(angle!=-100.0)
+    {
+      angle_z = sin(angle/2.0);
+      angle_w = cos(angle/2.0);
+    }
+    else if(AB.norm() > AC.norm())
     {
       angle_z = sin(step_right_angle/2.0);
       angle_w = cos(step_right_angle/2.0);
@@ -123,8 +130,6 @@ int main(int argc, char **argv)
     goal.target_pose.pose.orientation.z = angle_z;
     goal.target_pose.pose.orientation.w = angle_w;
 
-    ROS_INFO("Reached.");
-
     Eigen::Vector2d pos = A;
     Eigen::Vector2d check_pos = A2;
     Eigen::Vector2d check_step_right = {step_size, 0.0};
@@ -136,21 +141,17 @@ int main(int argc, char **argv)
     {
       if(data_recorded.data_recorded)
       {
-        move_base_msgs::MoveBaseGoal goal;
-        goal.target_pose.header.frame_id = "/map";
         goal.target_pose.header.stamp = ros::Time::now();
         goal.target_pose.pose.position.x = pos(0);
         goal.target_pose.pose.position.y = pos(1);
-        goal.target_pose.pose.orientation.z = angle_z;
-        goal.target_pose.pose.orientation.w = angle_w;
         ac.sendGoal(goal);
         ac.waitForResult();
 
         if(AB.norm() > AC.norm())
         {
-          if((check_pos(0) + sign * check_step_right(0) > AB2(0))||(check_pos(1) + sign * check_step_right(1) < AC(1)))
+          if((check_pos(0) + sign * check_step_right(0) > AB2(0)) || check_pos(0) + sign * check_step_right(0) < A2(0) ||(check_pos(1) + sign * check_step_right(1) < AC2(1)) || (check_pos(1) + sign * check_step_right(1) > A2(1)))
           {
-            if((check_pos(0) + check_step_down(0) > AB2(0))||(check_pos(1) + check_step_down(1) < AC(1)))
+            if((check_pos(0) + check_step_down(0) > AB2(0)) || check_pos(0) + check_step_down(0) < A2(0) || (check_pos(1) + check_step_down(1) < AC2(1)) || (check_pos(1) + check_step_down(1) > A2(1)))
             {
               ROS_INFO("Map was fully traversed.");
               return 0;
@@ -159,20 +160,27 @@ int main(int argc, char **argv)
             check_pos = check_pos + check_step_down;
             sign = -1 * sign;
             step_right_angle = fmod(atan2(sign*step_right(1), sign*step_right(0)), (2.0*M_PI));
-            angle_z = sin(step_right_angle/2.0);
-            angle_w = cos(step_right_angle/2.0);
+            if(angle==-100.0)
+            {
+              angle_z = sin(step_right_angle/2.0);
+              angle_w = cos(step_right_angle/2.0);
+              goal.target_pose.pose.orientation.z = angle_z;
+              goal.target_pose.pose.orientation.w = angle_w;
+            }
+            ROS_INFO("New Position down.");
           }
           else
           {
             pos = pos + sign * step_right;
             check_pos = check_pos + sign * check_step_right;
+            ROS_INFO("New Position right.");
           }
         }
         else
         {
-          if((check_pos(0) + sign * check_step_down(0) > AB2(0))||(check_pos(1) + sign * check_step_down(1) < AC(1)))
+          if((check_pos(0) + sign * check_step_down(0) > AB2(0)) || check_pos(0) + sign * check_step_down(0) < A2(0) ||(check_pos(1) + sign * check_step_down(1) < AC2(1)) || (check_pos(1) + sign * check_step_down(1) > A2(1)))
           {
-            if((check_pos(0) + check_step_right(0) > AB2(0))||(check_pos(1) + check_step_right(1) < AC(1)))
+            if((check_pos(0) + check_step_right(0) > AB2(0)) || check_pos(0) + check_step_right(0) < A2(0) || (check_pos(1) + check_step_right(1) < AC2(1)) || (check_pos(1) + check_step_right(1) > A2(1)))
             {
               ROS_INFO("Map was fully traversed.");
               return 0;
@@ -181,13 +189,20 @@ int main(int argc, char **argv)
             check_pos = check_pos + check_step_right;
             sign = -1 * sign;
             step_down_angle = fmod(atan2(sign*step_down(1), sign*step_down(0)), (2.0*M_PI));
-            angle_z = sin(step_down_angle/2.0);
-            angle_w = cos(step_down_angle/2.0);
+            if(angle==-100.0)
+            {
+              angle_z = sin(step_down_angle/2.0);
+              angle_w = cos(step_down_angle/2.0);
+              goal.target_pose.pose.orientation.z = angle_z;
+              goal.target_pose.pose.orientation.w = angle_w;
+            }
+            ROS_INFO("New Position right.");
           }
           else
           {
             pos = pos + sign * step_down;
             check_pos = check_pos + sign * check_step_down;
+            ROS_INFO("New Position down.");
           }
         }
       }
@@ -197,6 +212,11 @@ int main(int argc, char **argv)
   }
   else
   {
+    move_base_msgs::MoveBaseGoal goal;
+    goal.target_pose.header.frame_id = "/map";
+    goal.target_pose.pose.orientation.z = sin(angle/2.0);
+    goal.target_pose.pose.orientation.w = cos(angle/2.0);
+
     while(ros::ok())
     {
       if(data_recorded.data_recorded)
@@ -204,12 +224,10 @@ int main(int argc, char **argv)
         Eigen::Vector2d goal_point = random_position(A, AB, AC);
         double pos_x = goal_point(0);
         double pos_y = goal_point(1);
-        move_base_msgs::MoveBaseGoal goal;
-        goal.target_pose.header.frame_id = "/map";
         goal.target_pose.header.stamp = ros::Time::now();
         goal.target_pose.pose.position.x = pos_x;
         goal.target_pose.pose.position.y = pos_y;
-        goal.target_pose.pose.orientation.w = 1.0;
+
         ac.sendGoal(goal);
         ac.waitForResult();
       }

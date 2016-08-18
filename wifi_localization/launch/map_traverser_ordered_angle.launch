@@ -1,0 +1,23 @@
+<launch>
+    <node name="map_traverser" pkg="wifi_localization" type="map_traverser" output="screen">
+        <param name="p1_x" type="double" value="-6.2" />
+        <param name="p1_y" type="double" value="7.37" />
+        <param name="p2_x" type="double" value="-4.6" />
+        <param name="p2_y" type="double" value="7.67" />
+        <param name="p3_x" type="double" value="-5.0" />
+        <param name="p3_y" type="double" value="0.0" />
+        <param name="ordered" type="bool" value="true" />
+        <param name="angle" type="double" value="0.0" />
+    </node>
+</launch>
+<!--
+Values for testing 8 different directions:
+        0.0
+        0.7853
+        1.5707
+        2.3561
+        3.1415
+        3.9269
+        4.7123
+        5.4977
+-->
