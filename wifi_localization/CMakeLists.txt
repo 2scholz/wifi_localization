@@ -68,9 +68,9 @@ install(PROGRAMS
 )
 
 ## Declare a C++ executable
-add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp src/mapdata.cpp src/mapcollection.cpp)
+add_executable(wifi_data_collector src/wifi_data_collector_node.cpp src/subscriber.cpp src/mapdata.cpp src/mapcollection.cpp src/csv_data_loader.cpp)
 add_executable(map_traverser src/map_traverser_node.cpp)
-add_executable(wifi_localization src/wifi_localization_node.cpp src/gaussian_process/gaussian_process.cpp src/gaussian_process/kernel.cpp src/gaussian_process/optimizer.cpp)
+add_executable(wifi_localization src/wifi_localization_node.cpp src/gaussian_process/gaussian_process.cpp src/gaussian_process/kernel.cpp src/gaussian_process/optimizer.cpp src/csv_data_loader.cpp)
 
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
