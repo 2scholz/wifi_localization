@@ -39,6 +39,8 @@ private:
   Matrix<double, Dynamic, Dynamic> K_inv_;
   Matrix<double, Dynamic, 1> cov_vector;
   int n;
+  double min;
+  double max;
 };
 
 

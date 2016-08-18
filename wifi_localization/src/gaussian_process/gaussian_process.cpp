@@ -49,6 +49,8 @@ void Process::compute_cov_vector(double x, double y)
 
 double Process::probability(double x, double y, double z)
 {
+  // ToDo: Test if with min max normalization the localization works better.
+  // z = (z-min)/(max - min);
   Matrix<double, 2, 1> pos;
   pos << x, y;
   compute_cov_vector(x, y);
@@ -65,6 +67,14 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   training_observs_.resize(n, 1);
   training_coords_ = training_coords;
   training_observs_ = training_observs;
+  max = training_observs_.maxCoeff();
+  min = training_observs_.minCoeff();
+
+  // ToDo: Test if with min max normalization the localization works better.
+  // double min_max_diff = max - min;
+  // training_observs_ /= min_max_diff;
+  // training_observs_ = training_observs_.array() - (min/min_max_diff);
+
 
   K_.resize(n,n);
   cov_vector.resize(n,1);
