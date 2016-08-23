@@ -5,7 +5,8 @@
 #ifndef PROJECT_GAUSSIAN_PROCESS_H
 #define PROJECT_GAUSSIAN_PROCESS_H
 #include "gaussian_process/kernel.h"
-#include <eigen3/Eigen/Dense>
+//#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 using namespace Eigen;
 
@@ -27,6 +28,7 @@ public:
   void set_params(double signal_noise, double signal_var, double lengthscale);
   Matrix<double, Dynamic, 1> log_likelihood_gradient();
   double log_likelihood();
+  Vector3d get_params();
 
 private:
   void compute_cov_vector(double x, double y);
@@ -41,6 +43,12 @@ private:
   int n;
   double min;
   double max;
+  double x_mean_;
+  double y_mean_;
+  double obs_mean_;
+  double x_std_;
+  double y_std_;
+  double obs_std_;
 };
 
 

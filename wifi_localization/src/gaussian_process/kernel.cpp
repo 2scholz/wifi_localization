@@ -38,4 +38,13 @@ void Kernel::set_parameters(double signal_noise, double signal_var, double lengt
   signal_noise_ = exp(signal_noise);
   signal_var_ = exp(2 * signal_var);
   lengthscale_ = exp(lengthscale);
+  orig_signal_noise_ = signal_noise;
+  orig_signal_var_ = signal_var;
+  orig_lengthscale_ = lengthscale;
+}
+
+Vector3d Kernel::get_parameters()
+{
+  Vector3d parameters = {orig_signal_noise_, orig_signal_var_, orig_lengthscale_};
+  return parameters;
 }

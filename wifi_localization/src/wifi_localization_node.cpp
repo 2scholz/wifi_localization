@@ -10,6 +10,10 @@
 #include <boost/filesystem.hpp>
 #include <std_srvs/Empty.h>
 #include <wifi_localization/WifiState.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <fstream>
+#include <boost/filesystem.hpp>
 
 using namespace boost::filesystem;
 
@@ -38,8 +42,16 @@ public:
     n.param("/wifi_localization/p3_y", p3_y, p3_y);
 
     Matrix<double, 3, 1> starting_point;
-    // ToDo: Change starting point.
     starting_point = {2.3, 2.3, 2.65};
+
+    bool existing_params = true;
+    boost::filesystem::path param_path(path+"/parameters");
+
+    if (!(boost::filesystem::exists(param_path)))
+    {
+      existing_params = false;
+      boost::filesystem::create_directory(param_path);
+    }
 
     for(directory_iterator itr(path); itr!=directory_iterator(); ++itr)
     {
@@ -48,14 +60,41 @@ public:
         std::string file_path = path+"/"+itr->path().filename().generic_string();
         std::string mac = file_path.substr( file_path.find_last_of("/") + 1 );
         mac = mac.substr(0, mac.find_last_of("."));
-        CSVDataLoader data(path);
+        CSVDataLoader data(file_path);
         Process gp(data.points, data.observations);
-        gp.train_params(starting_point);
+
+        if(!existing_params)
+        {
+          gp.train_params(starting_point);
+
+          boost::shared_ptr<std::ofstream> new_params = boost::make_shared<std::ofstream>();
+          new_params->open(std::string(path+"/parameters/"+mac+".csv").c_str());
+          *new_params << "signal_noise, signal_var, lengthscale" << "\n";
+          Eigen::Vector3d parameters = gp.get_params();
+          *new_params << std::to_string(parameters(0))+", "+std::to_string(parameters(1))+", "+std::to_string(parameters(2)) << "\n";
+          new_params->flush();
+        }
+        else
+        {
+          std::ifstream file(path+"/parameters/"+mac+".csv");
+          std::string value;
+          std::string signal_noise;
+          std::string signal_var;
+          std::string lengthscale;
+          getline(file, value, '\n');
+          getline(file, signal_noise, ',');
+          getline(file, signal_var, ',');
+          getline(file, lengthscale, '\n');
+          std::cout << signal_noise << signal_var << lengthscale << std::endl;
+          gp.set_params(std::stod(signal_noise), std::stod(signal_var), std::stod(lengthscale));
+        }
+
+        std::cout << "loaded params: " << gp.get_params() << std::endl;
 
         gps.insert(gps.begin(), std::make_pair(mac, gp));
+        //ROS_INFO(("Finished reading file: " + file_path).c_str());
       }
     }
-
 
     if(p1_x == 0.0 && p1_y == 0.0 && p2_x == 0.0 && p2_y == 0.0 && p3_x == 0.0 && p3_y == 0.0)
     {
@@ -88,9 +127,10 @@ public:
     AB = B - A;
     AC = C - A;
 
-    ros::ServiceServer service = n.advertiseService("wifi_localization/compute_amcl_start_point", &WifiLocalization::compute_pose, this);
+    compute_starting_point_service = n.advertiseService("compute_amcl_start_point", &WifiLocalization::compute_pose, this);
     initialpose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1000);
     sub = n.subscribe("wifi_state", 1000, &WifiLocalization::wifi_callback, this);
+    ROS_INFO("Finished initialization.");
   }
 
   Eigen::Vector2d random_position()
@@ -110,6 +150,7 @@ private:
   int n_particles;
   ros::Publisher initialpose_pub;
   ros::Subscriber sub;
+  ros::ServiceServer compute_starting_point_service;
   std::vector<std::pair<std::string, double>> macs_and_strengths;
 
   bool compute_pose(std_srvs::Empty::Request  &req,
@@ -121,7 +162,7 @@ private:
 
     for(int i = 0; i < n_particles; ++i)
     {
-      double sum = 0.0;
+      double total_prob = 1.0;
 
       Eigen::Vector2d random_point = random_position();
       for(auto it:macs_and_strengths)
@@ -130,22 +171,27 @@ private:
 
         if(data != gps.end())
         {
-          sum += data->second.probability(random_point(0), random_point(1), it.second);
+          double prob = data->second.probability(random_point(0), random_point(1), it.second);
+          total_prob *= prob;
         }
       }
-      if(sum > highest_prob)
+      if(total_prob > highest_prob)
       {
-        highest_prob = sum;
+        highest_prob = total_prob;
         most_likely_pos = {random_point(0), random_point(1)};
+        std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
+        std::cout << "With probability: " << highest_prob << std::endl;
       }
     }
+
     computing = false;
 
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
-    pose.pose.pose.position.x=most_likely_pos(0);
-    pose.pose.pose.position.y=most_likely_pos(1);
-    pose.pose.pose.position.z=0;
+    pose.pose.pose.position.x = most_likely_pos(0);
+    pose.pose.pose.position.y = most_likely_pos(1);
+    pose.pose.pose.position.z = 0.0;
+    pose.pose.pose.orientation.w = 1.0;
 
     initialpose_pub.publish(pose);
 

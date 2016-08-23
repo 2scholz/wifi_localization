@@ -3,10 +3,12 @@
 //
 
 #include <fstream>
+#include <iostream>
 #include "csv_data_loader.h"
 
 CSVDataLoader::CSVDataLoader(std::string path)
 {
+  std::cout << "path: " << path << std::endl;
   std::ifstream file(path);
   int i = -1;
   std::string line;
@@ -17,7 +19,11 @@ CSVDataLoader::CSVDataLoader(std::string path)
   file.clear();
   file.seekg(0, std::ios::beg);
 
-  observations.resize(i, 1);
+  std::cout << i << std::endl;
+  if(i == -1)
+    exit(-1);
+
+  observations.resize(i,1);
   points.resize(i,2);
 
   std::string value;

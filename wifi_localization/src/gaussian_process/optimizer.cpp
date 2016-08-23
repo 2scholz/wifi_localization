@@ -2,6 +2,7 @@
 // Created by 2scholz on 12.08.16.
 //
 
+#include <iostream>
 #include "gaussian_process/optimizer.h"
 
 void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double delta0, double delta_min, double delta_max,
@@ -29,7 +30,7 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
     {
       if(grad_old(j,0)>0.0)
       {
-        delta(j,0) = std::min(delta(j,0)*eta_minus, delta_max);
+        delta(j,0) = std::min(delta(j,0)*eta_plus, delta_max);
       }
       else if(grad_old(j,0)<0.0)
       {
@@ -51,6 +52,9 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
       best = lik;
       best_params = params;
     }
+    std::cout << "likelihood: " << lik << std::endl;
   }
+  std::cout << "best likelihood: " << best << std::endl;
+  std::cout << "gradient: " << grad_old << std::endl;
   p_.set_params(best_params);
 }

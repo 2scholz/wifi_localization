@@ -49,8 +49,10 @@ void Process::compute_cov_vector(double x, double y)
 
 double Process::probability(double x, double y, double z)
 {
-  // ToDo: Test if with min max normalization the localization works better.
   // z = (z-min)/(max - min);
+  x = (x - x_mean_)/x_std_;
+  y = (y- y_mean_)/y_std_;
+  z = (z - obs_mean_)/obs_std_;
   Matrix<double, 2, 1> pos;
   pos << x, y;
   compute_cov_vector(x, y);
@@ -65,15 +67,28 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   n = training_coords.rows();
   training_coords_.resize(n, 2);
   training_observs_.resize(n, 1);
-  training_coords_ = training_coords;
-  training_observs_ = training_observs;
-  max = training_observs_.maxCoeff();
-  min = training_observs_.minCoeff();
+  //training_coords_ = training_coords;
+  //training_observs_ = training_observs;
 
-  // ToDo: Test if with min max normalization the localization works better.
-  // double min_max_diff = max - min;
-  // training_observs_ /= min_max_diff;
-  // training_observs_ = training_observs_.array() - (min/min_max_diff);
+  Eigen::RowVectorXd mean = training_coords.colwise().mean();
+  x_mean_ = mean(0);
+  y_mean_ = mean(1);
+  Eigen::RowVectorXd std = ((training_coords.rowwise() - mean).array().square().colwise().sum() / (training_coords.rows() - 1)).sqrt();
+  x_std_ = std(0);
+  y_std_ = std(1);
+  training_coords_ = (training_coords.rowwise() - mean).array().rowwise() / std.array();
+
+  mean = training_observs.colwise().mean();
+  obs_mean_ = mean(0);
+  std = ((training_observs.rowwise() - mean).array().square().colwise().sum() / (training_observs.rows() - 1)).sqrt();
+  obs_std_ = std(0);
+  training_observs_ = (training_observs.rowwise() - mean).array().rowwise() / std.array();
+
+  //max = training_observs_.maxCoeff();
+  //min = training_observs_.minCoeff();
+  //double min_max_diff = max - min;
+  //training_observs_ /= min_max_diff;
+  //training_observs_ = training_observs_.array() - (min/min_max_diff);
 
 
   K_.resize(n,n);
@@ -141,4 +156,10 @@ Matrix<double, Dynamic, 1> Process::log_likelihood_gradient()
   res(2) = 0.5 * ((alpha2*K3).trace());
 
   return -res;
+}
+
+Vector3d Process::get_params()
+{
+  Vector3d params = kernel_.get_parameters();
+  return params;
 }
