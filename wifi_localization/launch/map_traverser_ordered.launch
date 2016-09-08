@@ -1,0 +1,11 @@
+<launch>
+    <node name="map_traverser" pkg="wifi_localization" type="map_traverser" output="screen">
+        <param name="p1_x" type="double" value="-0.313" />
+        <param name="p1_y" type="double" value="-3.01" />
+        <param name="p2_x" type="double" value="-0.313" />
+        <param name="p2_y" type="double" value="-3.01" />
+        <param name="p3_x" type="double" value="7.41" />
+        <param name="p3_y" type="double" value="-0.914" />
+        <param name="ordered" type="bool" value="true" />
+    </node>
+</launch>
