@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "gaussian_process/optimizer.h"
+#include "wifi_position_estimation/gaussian_process/optimizer.h"
 
 void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double delta0, double delta_min, double delta_max,
                       double eta_minus, double eta_plus, double eps_stop)

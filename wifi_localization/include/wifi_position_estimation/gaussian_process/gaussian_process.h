@@ -4,7 +4,7 @@
 
 #ifndef PROJECT_GAUSSIAN_PROCESS_H
 #define PROJECT_GAUSSIAN_PROCESS_H
-#include "gaussian_process/kernel.h"
+#include "kernel.h"
 //#include <eigen3/Eigen/Dense>
 #include <Eigen/Dense>
 

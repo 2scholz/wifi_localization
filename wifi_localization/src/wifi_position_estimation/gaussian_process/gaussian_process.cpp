@@ -2,8 +2,8 @@
 // Created by 2scholz on 26.07.16.
 //
 
-#include "gaussian_process/gaussian_process.h"
-#include "gaussian_process/optimizer.h"
+#include "wifi_position_estimation/gaussian_process/gaussian_process.h"
+#include "wifi_position_estimation/gaussian_process/optimizer.h"
 
 Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
                  double signal_noise, double signal_var, double lengthscale) : kernel_(signal_noise, signal_var, lengthscale)

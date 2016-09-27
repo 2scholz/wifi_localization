@@ -2,7 +2,7 @@
 // Created by 2scholz on 26.07.16.
 //
 
-#include "gaussian_process/kernel.h"
+#include "wifi_position_estimation/gaussian_process/kernel.h"
 
 Kernel::Kernel(double signal_noise, double signal_var, double lengthscale)
 {

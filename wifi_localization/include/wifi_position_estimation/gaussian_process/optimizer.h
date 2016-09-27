@@ -4,7 +4,7 @@
 
 #ifndef PROJECT_OPTIMIZER_H
 #define PROJECT_OPTIMIZER_H
-#include "gaussian_process/gaussian_process.h"
+#include "gaussian_process.h"
 
 class Optimizer
 {

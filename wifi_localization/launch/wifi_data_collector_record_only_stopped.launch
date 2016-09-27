@@ -1,6 +1,6 @@
 <launch>
     <node name="wifi_data_collector" pkg="wifi_localization" type="wifi_data_collector" output="screen">
-        <param name="threshold" type="double" value="0.0" />
+        <param name="threshold" type="double" value="1.0" />
         <param name="user_input" type="bool" value="false" />
         <param name="record_only_stopped" type="bool" value="true" />
     </node>
