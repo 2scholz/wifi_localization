@@ -8,9 +8,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <std_srvs/Empty.h>
-#include "mapcollection.h"
-#include <grid_map_ros/grid_map_ros.hpp>
-#include <grid_map_msgs/GridMap.h>
+#include "wifi_data_collector/mapcollection.h"
 
 MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n)
 {
@@ -90,9 +88,8 @@ std::map<std::string, MapData>::iterator MapCollection::get_map(std::string mac)
     ros::Publisher wifi_map_pub_2 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_ln", 1000, true);
     ros::Publisher wifi_map_pub_3 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_gi", 1000, true);
     ros::Publisher wifi_map_pub_4 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_gn", 1000, true);
-    ros::Publisher grid_map_pub = n_.advertise<grid_map_msgs::GridMap>(mac_pub_name+"_grid", 1, true);
 
-    MapData temp(new_mac, wifi_map_pub, wifi_map_pub_2, wifi_map_pub_3, wifi_map_pub_4, grid_map_pub);
+    MapData temp(new_mac, wifi_map_pub, wifi_map_pub_2, wifi_map_pub_3, wifi_map_pub_4);
     data = mac_map_.insert(mac_map_.begin(), std::make_pair(mac, temp));
   }
   return data;

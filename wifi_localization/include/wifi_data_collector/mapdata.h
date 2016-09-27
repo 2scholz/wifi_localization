@@ -35,7 +35,7 @@ public:
    */
   MapData(  boost::shared_ptr<std::ofstream> file, ros::Publisher local_minmax_interpol_pub,
             ros::Publisher local_minmax_norm_pub, ros::Publisher global_minmax_interpol_pub,
-            ros::Publisher global_minmax_norm_pub, ros::Publisher grid_map_pub);
+            ros::Publisher global_minmax_norm_pub);
 
   /**
    * Returns cell value of given map. When the requested cell is out of bounds -1(unknown) is returned
@@ -91,9 +91,6 @@ private:
 
   /// Publisher for normalized map with global min and max
   ros::Publisher global_minmax_norm_pub_;
-
-  /// Publisher for the grid map
-  ros::Publisher grid_map_pub_;
 
   /// local minimum, meaning this is the minimum value that was added to this map
   int local_min_;

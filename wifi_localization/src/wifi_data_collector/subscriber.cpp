@@ -2,20 +2,24 @@
 // Created by 2scholz on 01.08.16.
 //
 
-#include "subscriber.h"
+#include "wifi_data_collector/subscriber.h"
 #include <fstream>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
 Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
-  record_user_input_(false), n_(n), maps(n), record_(false), record_next_(false), stands_still_(false),
-  user_input_(false), record_only_stopped_(false), threshold_(0.0)
+  n_(n),
+  maps(n),
+  record_(false),
+  record_next_(false),
+  stands_still_(false),
+  record_only_stopped_(false),
+  threshold_(1.0)
 {
   recorded_since_stop.data = false;
   std::string path_to_csv = "";
 
   n.param("/wifi_data_collector/threshold", threshold_, threshold_);
-  n.param("/wifi_data_collector/user_input", user_input_, user_input_);
   n.param("/wifi_data_collector/record_only_stopped", record_only_stopped_, record_only_stopped_);
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
 
@@ -33,18 +37,8 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(100), *max_weight_sub_, *pose_sub_);
   sync_->registerCallback(boost::bind(&Subscriber::amclCallbackMethod, this, _1, _2));
 
-  recording_service = n.advertiseService("start_stop_recording", &Subscriber::recording, this);
+  recording_service = n.advertiseService("start_recording", &Subscriber::recording, this);
   record_next_signal_service = n.advertiseService("record_next_signal", &Subscriber::record_next_signal, this);
-}
-
-void Subscriber::recordNext()
-{
-  record_user_input_ = true;
-}
-
-bool& Subscriber::isRecording()
-{
-  return record_user_input_;
 }
 
 //The callback method
@@ -59,7 +53,7 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
   // Only record the data if max_weight is big enough and if user input mode is activated only if the user pressed the key to record.
-  if ((((max_weight_ > threshold_ && (user_input_ && record_user_input_)) || (max_weight_ > threshold_ && record_) || (max_weight_ > threshold_ && record_next_)) && (!record_only_stopped_||stands_still_)) && !wifi_data_msg->macs.empty())
+  if ((((max_weight_ < threshold_ && record_) || (max_weight_ < threshold_ && record_next_)) && (!record_only_stopped_||stands_still_)) && !wifi_data_msg->macs.empty())
   {
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
     {
@@ -68,11 +62,6 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
 
       maps.add_data(mac_name, pos_x_, pos_y_, wifi_dbm);
 
-    }
-    if(record_user_input_)
-    {
-      record_user_input_ = false;
-      ROS_INFO("Recording successful.");
     }
     if(record_next_)
     {

@@ -19,8 +19,8 @@
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
 #include <std_msgs/Bool.h>
-#include "mapdata.h"
-#include "mapcollection.h"
+#include "catkin_ws/src/tams_wifi_localization/wifi_localization/include/wifi_data_collector/mapdata.h"
+#include "catkin_ws/src/tams_wifi_localization/wifi_localization/include/wifi_data_collector/mapcollection.h"
 #include <sound_play/sound_play.h>
 
 
@@ -41,17 +41,6 @@ public:
    * @param map_resolution Size of each cell side in meters
    */
   Subscriber(ros::NodeHandle &n, float map_resolution);
-
-  /**
-   * Record the next time wifi_signals are recorded
-   */
-  void recordNext();
-
-  /**
-   * Were wifi_signals recorded since the last user input?
-   * @return True if object is still waiting for wifi_signals, False if not
-   */
-  bool& isRecording();
 
 private:
   /// ros NodeHandle that is used for subscribers and publishers
@@ -77,12 +66,6 @@ private:
 
   /// Data is only recorded when the incoming max weight is higher than the threshold
   double threshold_;
-
-  /// True when it is only recorded after the user pressed a key, otherwise false
-  bool user_input_;
-
-  /// Is there an outstanding recording since a user pressed the key
-  bool record_user_input_;
 
   /// Record only when the robot is stopped when set to true
   bool record_only_stopped_;
