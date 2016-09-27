@@ -1264,6 +1264,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // Read out the current hypotheses
     double max_weight = 0.0;
     int max_weight_hyp = -1;
+    double w_slow;
+    double w_fast;
     std::vector<amcl_hyp_t> hyps;
     hyps.resize(pf_->sets[pf_->current_set].cluster_count);
     for(int hyp_count = 0;
@@ -1272,7 +1274,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       double weight;
       pf_vector_t pose_mean;
       pf_matrix_t pose_cov;
-      if (!pf_get_cluster_stats(pf_, hyp_count, &weight, &pose_mean, &pose_cov))
+
+      if (!pf_get_cluster_stats(pf_, hyp_count, &weight, &pose_mean, &pose_cov, &w_slow, &w_fast))
       {
         ROS_ERROR("Couldn't get stats on cluster %d", hyp_count);
         break;
@@ -1343,7 +1346,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
       amcl::MaxWeight max_weight_msg;
       max_weight_msg.header.stamp = p.header.stamp;
-      max_weight_msg.max_weight = max_weight * set->sample_count;//pf_->sets[pf_->current_set].sample_count;
+      max_weight_msg.max_weight = 1 - (w_fast/w_slow);//max_weight * set->sample_count;//pf_->sets[pf_->current_set].sample_count;
       max_weight_pub_.publish(max_weight_msg);
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",

@@ -343,10 +343,11 @@ void pf_update_resample(pf_t *pf)
   total = 0;
   set_b->sample_count = 0;
 
-  w_diff = 1.0 - pf->w_fast / pf->w_slow;
+  w_diff = 0.0; //1.0 - pf->w_fast / pf->w_slow;
+
   if(w_diff < 0.0)
     w_diff = 0.0;
-  //printf("w_diff: %9.6f\n", w_diff);
+  // printf("w_diff: %9.6f\n", w_diff);
 
   // Can't (easily) combine low-variance sampler with KLD adaptive
   // sampling, so we'll take the more traditional route.
@@ -641,7 +642,7 @@ void pf_get_cep_stats(pf_t *pf, pf_vector_t *mean, double *var)
 
 // Get the statistics for a particular cluster.
 int pf_get_cluster_stats(pf_t *pf, int clabel, double *weight,
-                         pf_vector_t *mean, pf_matrix_t *cov)
+                         pf_vector_t *mean, pf_matrix_t *cov, double *w_slow, double *w_fast)
 {
   pf_sample_set_t *set;
   pf_cluster_t *cluster;
@@ -655,6 +656,8 @@ int pf_get_cluster_stats(pf_t *pf, int clabel, double *weight,
   *weight = cluster->weight;
   *mean = cluster->mean;
   *cov = cluster->cov;
+  *w_slow = pf->w_slow;
+  *w_fast = pf->w_fast;
 
   return 1;
 }
