@@ -19,8 +19,8 @@
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
 #include <std_msgs/Bool.h>
-#include "catkin_ws/src/tams_wifi_localization/wifi_localization/include/wifi_data_collector/mapdata.h"
-#include "catkin_ws/src/tams_wifi_localization/wifi_localization/include/wifi_data_collector/mapcollection.h"
+#include "wifi_data_collector/mapdata.h"
+#include "wifi_data_collector/mapcollection.h"
 #include <sound_play/sound_play.h>
 
 
