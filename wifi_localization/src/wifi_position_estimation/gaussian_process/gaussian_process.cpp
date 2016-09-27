@@ -49,7 +49,6 @@ void Process::compute_cov_vector(double x, double y)
 
 double Process::probability(double x, double y, double z)
 {
-  // z = (z-min)/(max - min);
   x = (x - x_mean_)/x_std_;
   y = (y- y_mean_)/y_std_;
   z = (z - obs_mean_)/obs_std_;
@@ -67,8 +66,6 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   n = training_coords.rows();
   training_coords_.resize(n, 2);
   training_observs_.resize(n, 1);
-  //training_coords_ = training_coords;
-  //training_observs_ = training_observs;
 
   Eigen::RowVectorXd mean = training_coords.colwise().mean();
   x_mean_ = mean(0);
@@ -83,13 +80,6 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   std = ((training_observs.rowwise() - mean).array().square().colwise().sum() / (training_observs.rows() - 1)).sqrt();
   obs_std_ = std(0);
   training_observs_ = (training_observs.rowwise() - mean).array().rowwise() / std.array();
-
-  //max = training_observs_.maxCoeff();
-  //min = training_observs_.minCoeff();
-  //double min_max_diff = max - min;
-  //training_observs_ /= min_max_diff;
-  //training_observs_ = training_observs_.array() - (min/min_max_diff);
-
 
   K_.resize(n,n);
   cov_vector.resize(n,1);

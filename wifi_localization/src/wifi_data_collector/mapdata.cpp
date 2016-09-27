@@ -5,6 +5,9 @@
 #include "mapdata.h"
 #include <fstream>
 #include <eigen3/Eigen/Core>
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_msgs/GridMap.h>
+
 
 int MapData::global_min_ = 100;
 int MapData::global_max_ = 0;
@@ -12,9 +15,10 @@ nav_msgs::OccupancyGrid MapData::empty_map_ = nav_msgs::OccupancyGrid();
 
 MapData::MapData(boost::shared_ptr<std::ofstream> file, ros::Publisher local_minmax_interpol_pub,
                  ros::Publisher local_minmax_norm_pub, ros::Publisher global_minmax_interpol_pub,
-                 ros::Publisher global_minmax_norm_pub) :
+                 ros::Publisher global_minmax_norm_pub, ros::Publisher grid_map_pub) :
   file_(file), local_minmax_interpol_pub_(local_minmax_interpol_pub), local_minmax_norm_pub_(local_minmax_norm_pub),
   global_minmax_interpol_pub_(global_minmax_interpol_pub), global_minmax_norm_pub_(global_minmax_norm_pub),
+  grid_map_pub_(grid_map_pub),
   local_min_(100), local_max_(0),
   map_(empty_map_.info.width, std::vector<std::vector<int> >(empty_map_.info.height, std::vector<int>(0)))
 {
@@ -24,12 +28,24 @@ MapData::MapData(boost::shared_ptr<std::ofstream> file, ros::Publisher local_min
 
 void MapData::publish_maps()
 {
+  grid_map::GridMap map({"normalized local", "normalized global", "interpolated local", "interpolated global"});
+  map.setFrameId("map");
+  map.setGeometry(grid_map::Length(empty_map_.info.width, empty_map_.info.height), 0.20);
+
   std::vector<std::vector<int> > normalized_map = normalize_map(local_min_, local_max_);
   local_minmax_norm_pub_.publish(convert_to_grid(normalized_map));
+  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(normalized_map),"normalized local",map);
   local_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
+  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(interpolate_map(normalized_map)),"interpolated local",map);
   normalized_map = normalize_map(global_min_, global_max_);
   global_minmax_norm_pub_.publish(convert_to_grid(normalized_map));
+  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(normalized_map),"normalized global",map);
   global_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
+  grid_map::GridMapRosConverter::fromOccupancyGrid(convert_to_grid(interpolate_map(normalized_map)),"interpolated global",map);
+
+  grid_map_msgs::GridMap msg;
+  grid_map::GridMapRosConverter::toMessage(map, msg);
+  grid_map_pub_.publish(msg);
 }
 
 void MapData::insert_data(double x, double y, double wifi_signal)
