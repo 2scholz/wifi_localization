@@ -19,7 +19,8 @@ class WifiPublisher:
 
     def run(self):
         while not rospy.is_shutdown():
-            proc = Popen("sudo iw dev wlan1 scan | grep -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}|SSID|signal'", shell=True, stdout=PIPE, stderr=STDOUT)
+            wifi_interface = rospy.get_param("/wifi_state/wifi_interface","wlan0")
+            proc = Popen("sudo iw dev "+wifi_interface+" scan | grep -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}|SSID|signal'", shell=True, stdout=PIPE, stderr=STDOUT)
             proc_out, proc_err = proc.communicate()
             result = self.parse_wifi_scan(proc_out)
             time = rospy.Time.now()

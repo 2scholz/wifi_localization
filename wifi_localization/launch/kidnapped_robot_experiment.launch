@@ -1,7 +1,7 @@
 <launch>
     <node name="map_traverser" pkg="wifi_localization" type="map_traverser" output="screen">
-        <rosparam param = "x_positions">[-1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8]</rosparam>
-        <rosparam param = "y_positions">[-3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11]</rosparam>
+        <rosparam param = "x_positions">[-1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8, -1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8,-1.9,22.8]</rosparam>
+        <rosparam param = "y_positions">[-3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11, -3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11,-3.36,4.11]</rosparam>
         <rosparam param = "angle_z">1.0</rosparam>
         <rosparam param = "angle_w">0.0</rosparam>
     </node>
