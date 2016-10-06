@@ -1,5 +1,5 @@
 <launch>
-    <node name="wifi_state" pkg="wifi_localization" type="wifi_state" output="screen">
-        <param name="wifi_interface" type="string" value="wlan1" />
+    <node name="wifi_publisher" pkg="wifi_localization" type="wifi_publisher.py" output="screen">
+        <param name="wifi_interface" type="string" value="wlan0" />
     </node>
 </launch>
