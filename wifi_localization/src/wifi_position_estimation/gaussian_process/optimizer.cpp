@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 12.08.16.
-//
-
 #include <iostream>
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
 
@@ -40,7 +36,7 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
       params(j,0) += (-sgn(grad(j,0))) * delta(j,0);
     }
     grad_old = grad;
-    if(grad_old.norm() < eps_stop)
+    if(grad_old.norm() <= eps_stop)
     {
       break;
     }

@@ -9,6 +9,12 @@
 class SubscriptionHandler
 {
 public:
+  /**
+   * SubscriptionHandler class
+   * Handles all necessary subscribers and publishers.
+   * @param n ros nodehandle
+   * @return
+   */
   SubscriptionHandler(ros::NodeHandle &n) : n_(n)
   {
     old_pose_sub = n.subscribe("amcl_pose_old", 1000, &SubscriptionHandler::old_pose_callback, this);
@@ -80,6 +86,16 @@ private:
   }
 };
 
+/**
+ * Node for second accuracy experiment. Using the map_traverser, amcl and rosbags the robot drives to different goals.
+ * This is recorded in rosbags. When replaying these bags a new instance of amcl and this node is run on the data.
+ * When the robot reaches a goal, the wifi_position_estimation is started. When reaching the next goal, the difference
+ * between the old amcl data and the data from the amcl node running at the moment are compared. Using this one can
+ * compare the position after using the wifi_position_estimation with the correct position.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "accuracy_experiment");

@@ -31,7 +31,6 @@ public:
    * @param global_minmax_interpol_pub publisher for interpolated map with global min and max
    * @param global_minmax_norm_pub publisher for normalized map with global min and max
    * @param grid_map_pub publisher for the grid map
-   * @return
    */
   MapData(  boost::shared_ptr<std::ofstream> file, ros::Publisher local_minmax_interpol_pub,
             ros::Publisher local_minmax_norm_pub, ros::Publisher global_minmax_interpol_pub,

@@ -14,6 +14,9 @@
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
+/**
+ * Subscriber class for the odometry.
+ */
 class OdometrySub
 {
 public:
@@ -32,6 +35,13 @@ private:
   }
 };
 
+/**
+ * Node to traverse the map. Given a vector of x- and y-coordinates as parameters, it drives to those coordinates one
+ * after the other.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_traverser");

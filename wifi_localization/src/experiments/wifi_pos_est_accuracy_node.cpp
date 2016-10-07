@@ -17,6 +17,14 @@ void goal_count_callback(const std_msgs::Int32::ConstPtr& msg)
   }
 }
 
+/**
+ * When using the map_traverser the robot drives to a list of goals. This node is used to start the
+ * wifi_position_estimation at every goal. But it doesn't publish an initial position for amcl, just the
+ * position and the difference to the current position determined by amcl.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "accuracy_experiment");

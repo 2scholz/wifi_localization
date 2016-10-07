@@ -5,7 +5,6 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
   std::string path = "";
   n_particles = 100;
   computing = false;
-  publish_pose_lock_ = false;
 
   n.param("/wifi_position_estimation/path_to_csv", path, path);
   n.param("/wifi_position_estimation/n_particles", n_particles, n_particles);
@@ -112,6 +111,7 @@ bool WifiPositionEstimation::publish_pose_service(std_srvs::Empty::Request  &req
   geometry_msgs::PoseWithCovarianceStamped pose = compute_pose();
   pose.header.stamp = ros::Time::now();
   initialpose_pub.publish(pose);
+  computing = false;
 
   return true;
 }
@@ -125,6 +125,7 @@ bool WifiPositionEstimation::publish_accuracy_data(std_srvs::Empty::Request &req
   msg.amcl_diff = sqrt(pow((pose.pose.pose.position.x - x_pos),2)+pow((pose.pose.pose.position.y - y_pos),2));
   msg.header.stamp = ros::Time::now();
   wifi_pos_estimation_pub.publish(msg);
+  computing = false;
 
   return true;
 }
@@ -162,8 +163,6 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
     }
   }
 
-  computing = false;
-
   geometry_msgs::PoseWithCovarianceStamped pose;
   pose.header.frame_id = "map";
   pose.pose.pose.position.x = most_likely_pos(0);
@@ -200,12 +199,10 @@ void WifiPositionEstimation::wifi_callback(const wifi_localization::WifiState::C
 
 void WifiPositionEstimation::max_weight_callback(const wifi_localization::MaxWeight::ConstPtr& msg)
 {
-  if(msg->max_weight > quality_threshold_ && !publish_pose_lock_)
+  if(msg->max_weight > quality_threshold_ && !computing)
   {
-    publish_pose_lock_ = true;
     compute_pose();
   }
-  publish_pose_lock_ = false;
 }
 
 void WifiPositionEstimation::amcl_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
