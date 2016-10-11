@@ -21,10 +21,10 @@ public:
   CSVDataLoader(std::string path);
 
   /// Coordinates
-  Eigen::Matrix<double, Eigen::Dynamic, 2> points;
+  Eigen::Matrix<double, Eigen::Dynamic, 2> points_;
 
   /// Observed wifi-signal strengths
-  Eigen::Matrix<double, Eigen::Dynamic, 1> observations;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> observations_;
 };
 
 #endif //PROJECT_CSV_DATA_LOADER_H

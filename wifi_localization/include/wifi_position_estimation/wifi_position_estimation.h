@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 19.09.16.
-//
-
 #ifndef PROJECT_WIFI_POSITION_ESTIMATION_H
 #define PROJECT_WIFI_POSITION_ESTIMATION_H
 #include <ros/init.h>
@@ -45,38 +41,38 @@ public:
 
 private:
   /// Number of particles used for the position estimation
-  int n_particles;
+  int n_particles_;
 
   /// Vectors used in computing a random position on the map. These vectors are corners of the map.
-  Eigen::Vector2d A;
-  Eigen::Vector2d AB;
-  Eigen::Vector2d AC;
+  Eigen::Vector2d A_;
+  Eigen::Vector2d AB_;
+  Eigen::Vector2d AC_;
 
   /// x coordinate provided by amcl
-  double x_pos;
+  double x_pos_;
 
   /// y coordinate provided by amcl
-  double y_pos;
+  double y_pos_;
 
   /// When max_weight from amcl, exceeds this threshold, the wifi position estimation is started.
   double quality_threshold_;
 
   /// Signals that a new position is already estimated, to stop it from starting multiple estimations.
-  bool computing;
+  bool computing_;
 
   /// map of macs and corresponding Gaussian processes.
-  std::map<std::string, Process> gps;
+  std::map<std::string, Process> gp_map_;
 
   /// Vector of incoming signal strengths and the corresponding mac-addresses.
-  std::vector<std::pair<std::string, double>> macs_and_strengths;
+  std::vector<std::pair<std::string, double>> macs_and_strengths_;
 
-  ros::Publisher initialpose_pub;
-  ros::Publisher wifi_pos_estimation_pub;
-  ros::Subscriber wifi_sub;
+  ros::Publisher initialpose_pub_;
+  ros::Publisher wifi_pos_estimation_pub_;
+  ros::Subscriber wifi_sub_;
   ros::Subscriber max_weight_sub_;
-  ros::Subscriber amcl_sub;
-  ros::ServiceServer compute_starting_point_service;
-  ros::ServiceServer publish_accuracy_data_service;
+  ros::Subscriber amcl_sub_;
+  ros::ServiceServer compute_starting_point_service_;
+  ros::ServiceServer publish_accuracy_data_service_;
 
   bool publish_pose_service(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
   bool publish_accuracy_data(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);

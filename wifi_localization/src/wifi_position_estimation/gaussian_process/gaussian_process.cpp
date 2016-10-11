@@ -43,7 +43,7 @@ void Process::compute_cov_vector(double x, double y)
   {
     Matrix<double, 2, 1> pos2;
     pos2 << training_coords_(i,0), training_coords_(i,1);
-    cov_vector(i,0) = kernel_.covariance(pos1, pos2);
+    cov_vector_(i,0) = kernel_.covariance(pos1, pos2);
   }
 }
 
@@ -55,8 +55,8 @@ double Process::probability(double x, double y, double z)
   Matrix<double, 2, 1> pos;
   pos << x, y;
   compute_cov_vector(x, y);
-  double mean = cov_vector.transpose() * K_inv_ * training_observs_;
-  double variance = kernel_.covariance(pos, pos) - cov_vector.transpose() * K_inv_ * cov_vector;
+  double mean = cov_vector_.transpose() * K_inv_ * training_observs_;
+  double variance = kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_;
 
   return ((1.0 / sqrt(2.0 * M_PI * fabs(variance))) * exp(-(pow(z-mean,2.0)/(2.0*fabs(variance)))));
 }
@@ -82,7 +82,7 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   training_observs_ = (training_observs.rowwise() - mean).array().rowwise() / std.array();
 
   K_.resize(n,n);
-  cov_vector.resize(n,1);
+  cov_vector_.resize(n,1);
 }
 
 void Process::set_params(const Matrix<double, Dynamic, 1> &params)

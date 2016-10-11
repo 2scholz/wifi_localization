@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 26.07.16.
-//
-
 #ifndef PROJECT_GAUSSIAN_PROCESS_H
 #define PROJECT_GAUSSIAN_PROCESS_H
 #include "kernel.h"
@@ -106,7 +102,7 @@ private:
   Kernel kernel_;
   Matrix<double, Dynamic, Dynamic> K_;
   Matrix<double, Dynamic, Dynamic> K_inv_;
-  Matrix<double, Dynamic, 1> cov_vector;
+  Matrix<double, Dynamic, 1> cov_vector_;
 
   /// Number of training coordinates and training observations
   int n;

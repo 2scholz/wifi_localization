@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     ++counter_msg.data;
     counter_pub.publish(counter_msg);
     ros::spinOnce();
-    ros::Duration(30.0).sleep();
+    ros::Duration(10.0).sleep();
     geometry_msgs::Twist turn;
     turn.angular.z = 1.0;
     ros::Rate r(100); // 100 hz
@@ -129,6 +129,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
     r.sleep();
   }
+  ROS_INFO("Reached last goal.");
 
   return 0;
 }

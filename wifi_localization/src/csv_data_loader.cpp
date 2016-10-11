@@ -23,8 +23,8 @@ CSVDataLoader::CSVDataLoader(std::string path)
   if(i == -1)
     exit(-1);
 
-  observations.resize(i,1);
-  points.resize(i,2);
+  observations_.resize(i,1);
+  points_.resize(i,2);
 
   std::string value;
   getline(file, value, '\n');
@@ -43,9 +43,9 @@ CSVDataLoader::CSVDataLoader(std::string path)
     double dx = std::stod(x);
     double dy = std::stod(y);
     double ds = std::stod(wifi_signal);
-    points(i,0) = dx;
-    points(i,1) = dy;
-    observations(i,0) = ds;
+    points_(i,0) = dx;
+    points_(i,1) = dy;
+    observations_(i,0) = ds;
     i++;
   }
 }

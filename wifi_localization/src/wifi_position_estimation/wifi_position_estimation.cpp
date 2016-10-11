@@ -3,11 +3,11 @@
 WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
 {
   std::string path = "";
-  n_particles = 100;
-  computing = false;
+  n_particles_ = 100;
+  computing_ = false;
 
   n.param("/wifi_position_estimation/path_to_csv", path, path);
-  n.param("/wifi_position_estimation/n_particles", n_particles, n_particles);
+  n.param("/wifi_position_estimation/n_particles", n_particles_, n_particles_);
   n.param("/wifi_position_estimation/quality_threshold", quality_threshold_, quality_threshold_);
 
   Matrix<double, 3, 1> starting_point;
@@ -30,7 +30,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
       std::string mac = file_path.substr( file_path.find_last_of("/") + 1 );
       mac = mac.substr(0, mac.find_last_of("."));
       CSVDataLoader data(file_path);
-      Process gp(data.points, data.observations);
+      Process gp(data.points_, data.observations_);
 
       if(!existing_params)
       {
@@ -60,7 +60,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
 
       std::cout << "loaded params: " << gp.get_params() << std::endl;
 
-      gps.insert(gps.begin(), std::make_pair(mac, gp));
+      gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
       //ROS_INFO(("Finished reading file: " + file_path).c_str());
     }
   }
@@ -81,19 +81,19 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
     ROS_ERROR("Failed to call map service");
   }
 
-  A = {amcl_map_.info.origin.position.x, amcl_map_.info.origin.position.y + amcl_map_.info.height * amcl_map_.info.resolution};
-  Eigen::Vector2d B = {A[0] + amcl_map_.info.width * amcl_map_.info.resolution, A[1]};
-  Eigen::Vector2d C = {A[0], amcl_map_.info.origin.position.y};
-  AB = B - A;
-  AC = C - A;
+  A_ = {amcl_map_.info.origin.position.x, amcl_map_.info.origin.position.y + amcl_map_.info.height * amcl_map_.info.resolution};
+  Eigen::Vector2d B = {A_[0] + amcl_map_.info.width * amcl_map_.info.resolution, A_[1]};
+  Eigen::Vector2d C = {A_[0], amcl_map_.info.origin.position.y};
+  AB_ = B - A_;
+  AC_ = C - A_;
 
-  compute_starting_point_service = n.advertiseService("compute_amcl_start_point", &WifiPositionEstimation::publish_pose_service, this);
-  publish_accuracy_data_service = n.advertiseService("wifi_position_estimation", &WifiPositionEstimation::publish_accuracy_data, this);
-  initialpose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1000);
-  wifi_sub = n.subscribe("wifi_state", 1000, &WifiPositionEstimation::wifi_callback, this);
+  compute_starting_point_service_ = n.advertiseService("compute_amcl_start_point", &WifiPositionEstimation::publish_pose_service, this);
+  publish_accuracy_data_service_ = n.advertiseService("wifi_position_estimation", &WifiPositionEstimation::publish_accuracy_data, this);
+  initialpose_pub_ = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1000);
+  wifi_sub_ = n.subscribe("wifi_state", 1000, &WifiPositionEstimation::wifi_callback, this);
   max_weight_sub_ = n.subscribe("max_weight", 1000, &WifiPositionEstimation::max_weight_callback, this);
-  wifi_pos_estimation_pub = n.advertise<wifi_localization::WifiPositionEstimation>("wifi_pos_estimation_data", 1000);
-  amcl_sub = n.subscribe("amcl_pose", 1000, &WifiPositionEstimation::amcl_callback, this);
+  wifi_pos_estimation_pub_ = n.advertise<wifi_localization::WifiPositionEstimation>("wifi_pos_estimation_data", 1000);
+  amcl_sub_ = n.subscribe("amcl_pose", 1000, &WifiPositionEstimation::amcl_callback, this);
   ROS_INFO("Finished initialization.");
 }
 
@@ -102,7 +102,7 @@ Eigen::Vector2d WifiPositionEstimation::random_position()
   double u = (double)rand() / RAND_MAX;
   double v = (double)rand() / RAND_MAX;
 
-  return (A + u*AB + v*AC);
+  return (A_ + u*AB_ + v*AC_);
 }
 
 bool WifiPositionEstimation::publish_pose_service(std_srvs::Empty::Request  &req,
@@ -110,8 +110,8 @@ bool WifiPositionEstimation::publish_pose_service(std_srvs::Empty::Request  &req
 {
   geometry_msgs::PoseWithCovarianceStamped pose = compute_pose();
   pose.header.stamp = ros::Time::now();
-  initialpose_pub.publish(pose);
-  computing = false;
+  initialpose_pub_.publish(pose);
+  computing_ = false;
 
   return true;
 }
@@ -122,30 +122,30 @@ bool WifiPositionEstimation::publish_accuracy_data(std_srvs::Empty::Request &req
   wifi_localization::WifiPositionEstimation msg;
   msg.pos_x = pose.pose.pose.position.x;
   msg.pos_y = pose.pose.pose.position.y;
-  msg.amcl_diff = sqrt(pow((pose.pose.pose.position.x - x_pos),2)+pow((pose.pose.pose.position.y - y_pos),2));
+  msg.amcl_diff = sqrt(pow((pose.pose.pose.position.x - x_pos_),2)+pow((pose.pose.pose.position.y - y_pos_),2));
   msg.header.stamp = ros::Time::now();
-  wifi_pos_estimation_pub.publish(msg);
-  computing = false;
+  wifi_pos_estimation_pub_.publish(msg);
+  computing_ = false;
 
   return true;
 }
 
 geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
 {
-  computing = true;
+  computing_ = true;
   Vector2d most_likely_pos;
   double highest_prob = 0.0;
 
-  for(int i = 0; i < n_particles; ++i)
+  for(int i = 0; i < n_particles_; ++i)
   {
     double total_prob = 1.0;
 
     Eigen::Vector2d random_point = random_position();
-    for(auto it:macs_and_strengths)
+    for(auto it:macs_and_strengths_)
     {
-      std::map<std::string, Process>::iterator data = gps.find(it.first);
+      std::map<std::string, Process>::iterator data = gp_map_.find(it.first);
 
-      if(data != gps.end())
+      if(data != gp_map_.end())
       {
         double prob = data->second.probability(random_point(0), random_point(1), it.second);
         if(isnan(prob))
@@ -183,7 +183,7 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
 
 void WifiPositionEstimation::wifi_callback(const wifi_localization::WifiState::ConstPtr& msg)
 {
-  if(!computing && !msg->macs.empty())
+  if(!computing_ && !msg->macs.empty())
   {
     std::vector<std::pair<std::string, double>> mas;
     for (int i = 0; i < msg->macs.size(); i++)
@@ -193,13 +193,13 @@ void WifiPositionEstimation::wifi_callback(const wifi_localization::WifiState::C
 
       mas.push_back(std::make_pair(mac_name, wifi_dbm));
     }
-    macs_and_strengths = mas;
+    macs_and_strengths_ = mas;
   }
 }
 
 void WifiPositionEstimation::max_weight_callback(const wifi_localization::MaxWeight::ConstPtr& msg)
 {
-  if(msg->max_weight > quality_threshold_ && !computing)
+  if(msg->max_weight > quality_threshold_ && !computing_)
   {
     compute_pose();
   }
@@ -207,6 +207,6 @@ void WifiPositionEstimation::max_weight_callback(const wifi_localization::MaxWei
 
 void WifiPositionEstimation::amcl_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
-  x_pos = msg->pose.pose.position.x;
-  y_pos = msg->pose.pose.position.y;
+  x_pos_ = msg->pose.pose.position.x;
+  y_pos_ = msg->pose.pose.position.y;
 }
