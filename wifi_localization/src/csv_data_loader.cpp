@@ -4,11 +4,11 @@
 
 #include <fstream>
 #include <iostream>
+#include <ros/ros.h>
 #include "csv_data_loader.h"
 
 CSVDataLoader::CSVDataLoader(std::string path)
 {
-  std::cout << "path: " << path << std::endl;
   std::ifstream file(path);
   int i = -1;
   std::string line;
@@ -19,7 +19,6 @@ CSVDataLoader::CSVDataLoader(std::string path)
   file.clear();
   file.seekg(0, std::ios::beg);
 
-  std::cout << i << std::endl;
   if(i == -1)
     exit(-1);
 

@@ -9,12 +9,6 @@
 class SubscriptionHandler
 {
 public:
-  /**
-   * SubscriptionHandler class
-   * Handles all necessary subscribers and publishers.
-   * @param n ros nodehandle
-   * @return
-   */
   SubscriptionHandler(ros::NodeHandle &n) : n_(n)
   {
     old_pose_sub = n.subscribe("amcl_pose_old", 1000, &SubscriptionHandler::old_pose_callback, this);
@@ -26,6 +20,7 @@ public:
 
     wifi_pos_estimation_client = n.serviceClient<std_srvs::Empty>("compute_amcl_start_point");
     global_localization_client = n.serviceClient<std_srvs::Empty>("global_localization");
+    ROS_INFO("Done initializing");
   }
 private:
   ros::NodeHandle &n_;
@@ -65,6 +60,7 @@ private:
     diff_at_goal_pub.publish(diff_msg);
 
     std_srvs::Empty srv_msg;
+
     if (wifi_pos_estimation_client.call(srv_msg))
     {
       ROS_INFO("Published position estimation");
@@ -73,6 +69,7 @@ private:
     {
       ROS_INFO("Failed to publish position estimation");
     }
+
     /*
     if (global_localization_client.call(srv_msg))
     {
@@ -86,19 +83,9 @@ private:
   }
 };
 
-/**
- * Node for second accuracy experiment. Using the map_traverser, amcl and rosbags the robot drives to different goals.
- * This is recorded in rosbags. When replaying these bags a new instance of amcl and this node is run on the data.
- * When the robot reaches a goal, the wifi_position_estimation is started. When reaching the next goal, the difference
- * between the old amcl data and the data from the amcl node running at the moment are compared. Using this one can
- * compare the position after using the wifi_position_estimation with the correct position.
- * @param argc
- * @param argv
- * @return
- */
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "accuracy_experiment");
+  ros::init(argc, argv, "accuracy_experiment2");
   ros::NodeHandle n;
 
   SubscriptionHandler sh(n);

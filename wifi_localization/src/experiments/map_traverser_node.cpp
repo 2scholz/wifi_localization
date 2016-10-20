@@ -91,9 +91,11 @@ int main(int argc, char **argv)
     goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.pose.position.x = pos_x;
     goal.target_pose.pose.position.y = pos_y;
-    std::cout << pos_x << " " << pos_y << std::endl;
+    //std::cout << pos_x << " " << pos_y << std::endl;
+    ROS_INFO("Driving to position %f, %f", pos_x, pos_y);
     ac.sendGoalAndWait(goal);
-    std::cout << "reached" << std::endl;
+    ROS_INFO("Reached goal");
+    //std::cout << "reached" << std::endl;
     ++counter_msg.data;
     counter_pub.publish(counter_msg);
     ros::spinOnce();

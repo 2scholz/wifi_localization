@@ -10,6 +10,18 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
   n.param("/wifi_position_estimation/n_particles", n_particles_, n_particles_);
   n.param("/wifi_position_estimation/quality_threshold", quality_threshold_, quality_threshold_);
 
+  ROS_INFO("particle count: %i", n_particles_);
+  if(!path.empty())
+  {
+    ROS_INFO("Loading all csv-files from path: %s", path.c_str());
+  }
+  else
+  {
+    ROS_ERROR("No path to csv-files provided.");
+  }
+  ROS_INFO("Threshold to trigger Wi-Fi position estimation: %f", quality_threshold_);
+  ROS_INFO("Starting Initialization.");
+
   Matrix<double, 3, 1> starting_point;
   starting_point = {2.3, 2.3, 2.65};
 
@@ -34,6 +46,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
 
       if(!existing_params)
       {
+        ROS_INFO("Training Gaussian process with data from path: %s", file_path.c_str());
         gp.train_params(starting_point);
 
         boost::shared_ptr<std::ofstream> new_params = boost::make_shared<std::ofstream>();
@@ -54,14 +67,13 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
         getline(file, signal_noise, ',');
         getline(file, signal_var, ',');
         getline(file, lengthscale, '\n');
-        std::cout << signal_noise << signal_var << lengthscale << std::endl;
+        //std::cout << signal_noise << signal_var << lengthscale << std::endl;
         gp.set_params(std::stod(signal_noise), std::stod(signal_var), std::stod(lengthscale));
       }
 
-      std::cout << "loaded params: " << gp.get_params() << std::endl;
+      //std::cout << "loaded params: " << gp.get_params() << std::endl;
 
       gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
-      //ROS_INFO(("Finished reading file: " + file_path).c_str());
     }
   }
 
@@ -133,14 +145,19 @@ bool WifiPositionEstimation::publish_accuracy_data(std_srvs::Empty::Request &req
 geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
 {
   computing_ = true;
+  ROS_INFO("Starting position estimation.");
   Vector2d most_likely_pos;
   double highest_prob = 0.0;
+  std::sort(macs_and_strengths_.begin(), macs_and_strengths_.end(),
+            boost::bind(&std::pair<std::string, double>::second, _1) >
+            boost::bind(&std::pair<std::string, double>::second, _2));
 
   for(int i = 0; i < n_particles_; ++i)
   {
     double total_prob = 1.0;
 
     Eigen::Vector2d random_point = random_position();
+
     for(auto it:macs_and_strengths_)
     {
       std::map<std::string, Process>::iterator data = gp_map_.find(it.first);
@@ -153,15 +170,16 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
         total_prob *= prob;
       }
     }
-    std::cout << "total_prob: " << total_prob << std::endl;
     if(total_prob > highest_prob)
     {
       highest_prob = total_prob;
       most_likely_pos = {random_point(0), random_point(1)};
-      std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
-      std::cout << "With probability: " << highest_prob << std::endl;
+      // std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
+      // std::cout << "With probability: " << highest_prob << std::endl;
     }
   }
+
+  ROS_INFO("Estimated position: %f, %f", most_likely_pos(0), most_likely_pos(1));
 
   geometry_msgs::PoseWithCovarianceStamped pose;
   pose.header.frame_id = "map";
