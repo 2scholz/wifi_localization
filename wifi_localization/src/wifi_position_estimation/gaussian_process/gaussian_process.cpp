@@ -51,7 +51,7 @@ double Process::probability(double x, double y, double z)
 {
   x = (x - x_mean_)/x_std_;
   y = (y- y_mean_)/y_std_;
-  z = ((z - obs_mean_)/obs_std_)+10;
+  z = (z+100.0)/(100.0);
   Matrix<double, 2, 1> pos;
   pos << x, y;
   compute_cov_vector(x, y);
@@ -75,11 +75,7 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
   y_std_ = std(1);
   training_coords_ = (training_coords.rowwise() - mean).array().rowwise() / std.array();
 
-  mean = training_observs.colwise().mean();
-  obs_mean_ = mean(0);
-  std = ((training_observs.rowwise() - mean).array().square().colwise().sum() / (training_observs.rows() - 1)).sqrt();
-  obs_std_ = std(0);
-  training_observs_ = ((training_observs.rowwise() - mean).array().rowwise() / std.array())+10;
+  training_observs_ = (training_observs.array()+100.0)/(100.0);
 
   K_.resize(n,n);
   cov_vector_.resize(n,1);

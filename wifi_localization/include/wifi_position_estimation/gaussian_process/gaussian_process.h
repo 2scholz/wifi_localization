@@ -23,7 +23,6 @@ template <typename T> int sgn(T val)
  */
 class Process
 {
-  // friend class Optimizer;
 public:
   /**
    * Constructor
@@ -110,10 +109,8 @@ private:
   /// Values used for the normalization of the training data sets
   double x_mean_;
   double y_mean_;
-  double obs_mean_;
   double x_std_;
   double y_std_;
-  double obs_std_;
 };
 
 
