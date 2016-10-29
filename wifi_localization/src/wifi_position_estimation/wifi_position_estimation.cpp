@@ -23,7 +23,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
   ROS_INFO("Starting Initialization.");
 
   Matrix<double, 3, 1> starting_point;
-  starting_point = {2.3, 2.3, 2.65};
+  starting_point = {2.3, 2.3, -7.0};
 
   bool existing_params = true;
   boost::filesystem::path param_path(path+"/parameters");
@@ -73,6 +73,8 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
 
       //std::cout << "loaded params: " << gp.get_params() << std::endl;
 
+
+      std::replace(mac.begin(),mac.end(),'_',':');
       gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
     }
   }
