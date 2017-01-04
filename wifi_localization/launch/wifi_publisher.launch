@@ -1,5 +1,8 @@
 <launch>
     <node name="wifi_publisher" pkg="wifi_localization" type="wifi_publisher.py" output="screen">
         <param name="wifi_interface" type="string" value="wlan0" />
+	<param name="frequency" type="int" value="0" />
+	<!--<rosparam param="frequencies">[0]</rosparam>-->
+	<param name="discard_data_thresh_ms" type="int" value="100" />
     </node>
 </launch>

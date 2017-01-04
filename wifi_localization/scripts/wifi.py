@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 class Wifi:
-    def __init__(self, mac=None, ssid=None, strength=None):
+    def __init__(self, mac=None, ssid=None, strength=None, last_seen=None, frequency=None):
         self.mac = mac
         self.ssid = ssid
         self.strength = strength
+        self.last_seen = last_seen
+        self.frequency = frequency
 
     def __eq__(self, other):
         if not isinstance(other, Wifi):
