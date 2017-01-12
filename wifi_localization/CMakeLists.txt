@@ -63,8 +63,6 @@ include_directories(
 include_directories(EIGEN3_INCLUDE_DIR)
 
 install(PROGRAMS
-  scripts/wifi_map_builder.py
-  scripts/wifi_publisher.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -75,6 +73,7 @@ add_executable(wifi_position_estimation src/wifi_position_estimation/wifi_positi
 add_executable(accuracy_experiment src/experiments/wifi_pos_est_accuracy_node.cpp)
 add_executable(accuracy_experiment2 src/experiments/wifi_pos_est_accuracy2_node.cpp)
 add_executable(kidnapping_experiment src/experiments/wifi_pos_est_kidnapping_node.cpp)
+add_executable(wifi_publisher src/wifi_publisher/wifi_publisher_node.cpp src/wifi_publisher/wifipublisher.cpp)
 
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -82,6 +81,7 @@ add_dependencies(wifi_position_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 add_dependencies(accuracy_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(accuracy_experiment2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(kidnapping_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wifi_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
@@ -113,4 +113,10 @@ target_link_libraries(accuracy_experiment
 target_link_libraries(kidnapping_experiment
         ${Boost_LIBRARIES}
         ${catkin_LIBRARIES}
+        )
+
+target_link_libraries(wifi_publisher
+        ${Boost_LIBRARIES}
+        ${catkin_LIBRARIES}
+        -liw
         )
