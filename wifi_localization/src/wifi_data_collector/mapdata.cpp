@@ -5,6 +5,8 @@
 #include "wifi_data_collector/mapdata.h"
 #include <fstream>
 #include <eigen3/Eigen/Core>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <csv_data_loader.h>
 
 
 int MapData::global_min_ = 100;
@@ -33,10 +35,15 @@ void MapData::publish_maps()
   global_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
 }
 
-void MapData::insert_data(double x, double y, double wifi_signal)
+void MapData::insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose)
 {
+  double x = pose.pose.pose.position.x;
+  double y = pose.pose.pose.position.y;
+  geometry_msgs::Quaternion orientation = pose.pose.pose.orientation;
 
-  (*file_) << x << "," << y << "," << wifi_signal << "\n";
+
+  // Write the data to the csv file
+  (*file_) << x << "," << y << "," << wifi_signal << "," << timestamp << "," << channel << "," << orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << "\n";
 
   file_->flush();
 
@@ -75,35 +82,11 @@ void MapData::insert_data(double x, double y, double wifi_signal)
 
 void MapData::load_csv_data(std::string path)
 {
-  std::ifstream file(path);
-  int i = -1;
-  std::string line;
-  while(std::getline(file, line))
+  CSVDataLoader csv_data(path);
+  for(auto data_point:csv_data.data_points_)
   {
-    i++;
+    insert_data(data_point.timestamp_, data_point.signal_strength_, data_point.channel_, data_point.pose_);
   }
-  file.clear();
-  file.seekg(0, std::ios::beg);
-
-  std::string value;
-  getline(file, value, '\n');
-  i = 0;
-  std::string x;
-  std::string y;
-  std::string wifi_signal;
-  while(file.good())
-  {
-    getline(file, x, ',');
-    getline(file, y, ',');
-    getline(file, wifi_signal, '\n');
-    if(!file.good())
-      break;
-    double dx = std::stod(x);
-    double dy = std::stod(y);
-    double ds = std::stod(wifi_signal);
-    insert_data(dx, dy, ds);
-  }
-
 }
 
 void MapData::insert_grid_distance_value(std::vector<std::pair<double, int> > &distance_value, int x1, int y1, int x2, int y2, int value)

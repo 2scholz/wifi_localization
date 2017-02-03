@@ -6,6 +6,7 @@
 #define PROJECT_MAPDATA_H
 #include <ros/publisher.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 /**
  * The MapData class holds relevant data and provides relevant methods for a map of wifi_signals.
@@ -64,9 +65,8 @@ public:
    * @param y y value of the cell
    * @param wifi_signal signal that is going to be added to the cell
    */
-  void insert_data(double x, double y, double wifi_signal);
-
-  /**
+  void insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose);
+/**
    * Load data from csv file from old recording sessions
    * @param path Path to the folder containing the csv files
    */

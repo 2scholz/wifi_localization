@@ -5,6 +5,25 @@
 #ifndef PROJECT_CSV_DATA_LOADER_H
 #define PROJECT_CSV_DATA_LOADER_H
 #include <eigen3/Eigen/Core>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
+struct DataPoint
+{
+  /// Vector of poses
+  geometry_msgs::PoseWithCovarianceStamped pose_;
+
+  /// Vector of signal strengths
+  double signal_strength_;
+
+  /// Timestamps of the time the signal was recorded
+  int timestamp_;
+
+  /// Channels of the recorded Wi-Fi signal
+  int channel_;
+
+  DataPoint(geometry_msgs::PoseWithCovarianceStamped pose, double signal_strength, int timestamp, int channel) : pose_(pose), signal_strength_(signal_strength), timestamp_(timestamp), channel_(channel)
+  {}
+};
 
 /**
  * CSVDataLoader class
@@ -20,11 +39,14 @@ public:
    */
   CSVDataLoader(std::string path);
 
-  /// Coordinates
-  Eigen::Matrix<double, Eigen::Dynamic, 2> points_;
+  /// Coordinates matrix
+  Eigen::Matrix<double, Eigen::Dynamic, 2> coordinates_matrix_;
 
-  /// Observed wifi-signal strengths
-  Eigen::Matrix<double, Eigen::Dynamic, 1> observations_;
+  /// Observed wifi-signal strengths matrix
+  Eigen::Matrix<double, Eigen::Dynamic, 1> observations_matrix_;
+
+  /// Vector of data points. Contains the coordinates and observations as well, but in different format
+  std::vector<DataPoint> data_points_;
 };
 
 #endif //PROJECT_CSV_DATA_LOADER_H

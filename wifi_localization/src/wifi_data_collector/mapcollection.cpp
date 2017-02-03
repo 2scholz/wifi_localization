@@ -9,35 +9,48 @@
 #include <boost/filesystem.hpp>
 #include <std_srvs/Empty.h>
 #include "wifi_data_collector/mapcollection.h"
+#include <sys/stat.h>
+#include <ios>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
-MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n)
+MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n), store_data_separately_(false)
 {
   time_t rawtime;
   struct tm *timeinfo;
   char buffer[80];
+  n.param("/wifi_data_collector/store_data_separately", store_data_separately_, store_data_separately_);
 
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
+  dir_ = "./wifi_data/";
 
-  strftime(buffer, 80, "%d-%m-%Y %I:%M:%S", timeinfo);
-  date_ = buffer;
-
-  boost::filesystem::path dir("./wifi_data/");
+  boost::filesystem::path dir(dir_);
 
   if (!(boost::filesystem::exists(dir)))
   {
     boost::filesystem::create_directory(dir);
   }
 
-  dir = "./wifi_data/" + date_;
-
-  if (!(boost::filesystem::exists(dir)))
+  if(store_data_separately_)
   {
-    if (boost::filesystem::create_directory(dir))
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    std::string date;
+
+    strftime(buffer, 80, "%d-%m-%Y %I:%M:%S", timeinfo);
+    date = buffer;
+
+    dir_ = dir_ + date + "/";
+
+    dir = dir_;
+
+    if (!(boost::filesystem::exists(dir)))
     {
-      ROS_INFO("Created directories to save the data.");
+      if (boost::filesystem::create_directory(dir))
+      {
+        ROS_INFO("Created directories to store the data separately.");
+      }
     }
   }
+
 
   wifi_map_service = n.advertiseService("publish_wifi_maps", &MapCollection::publish_map_service, this);
 
@@ -45,10 +58,11 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
 
 }
 
-void MapCollection::add_data(std::string mac, double x, double y, double wifi_signal)
+void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal, int channel,
+                             geometry_msgs::PoseWithCovarianceStamped pose)
 {
   std::map<std::string, MapData>::iterator data = get_map(mac);
-  data->second.insert_data(x, y, wifi_signal);
+  data->second.insert_data(timestamp, wifi_signal, channel, pose);
 }
 
 void MapCollection::add_csv_data(std::string path)
@@ -77,8 +91,18 @@ std::map<std::string, MapData>::iterator MapCollection::get_map(std::string mac)
   if(data == mac_map_.end())
   {
     boost::shared_ptr<std::ofstream> new_mac = boost::make_shared<std::ofstream>();
-    new_mac->open(std::string("./wifi_data/" + date_ + "/" + mac + ".csv").c_str());
-    *new_mac << "x, y, strengths" << "\n";
+    std::string filename = dir_ + mac + ".csv";
+    bool new_file = true;
+
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+      new_file = false;
+    }
+    new_mac->open(filename.c_str(), std::ios::out | std::ios::app);
+
+    if(new_file)
+      *new_mac << "x, y, strengths, timestamp, channel, quat_x, quat_y, quat_z, quat_w" << "\n";
 
     // ros won't allow topics with ':' in them, so they have to be replaced in the mac address.
     std::string mac_pub_name = "/" + mac;

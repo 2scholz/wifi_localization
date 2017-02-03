@@ -42,7 +42,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
       std::string mac = file_path.substr( file_path.find_last_of("/") + 1 );
       mac = mac.substr(0, mac.find_last_of("."));
       CSVDataLoader data(file_path);
-      Process gp(data.points_, data.observations_);
+      Process gp(data.coordinates_matrix_, data.observations_matrix_);
 
       if(!existing_params)
       {
@@ -104,7 +104,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
   compute_starting_point_service_ = n.advertiseService("compute_amcl_start_point", &WifiPositionEstimation::publish_pose_service, this);
   publish_accuracy_data_service_ = n.advertiseService("wifi_position_estimation", &WifiPositionEstimation::publish_accuracy_data, this);
   initialpose_pub_ = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1000);
-  wifi_sub_ = n.subscribe("wifi_state", 1000, &WifiPositionEstimation::wifi_callback, this);
+  wifi_sub_ = n.subscribe("wifi_data", 1000, &WifiPositionEstimation::wifi_callback, this);
   max_weight_sub_ = n.subscribe("max_weight", 1000, &WifiPositionEstimation::max_weight_callback, this);
   wifi_pos_estimation_pub_ = n.advertise<wifi_localization::WifiPositionEstimation>("wifi_pos_estimation_data", 1000);
   amcl_sub_ = n.subscribe("amcl_pose", 1000, &WifiPositionEstimation::amcl_callback, this);

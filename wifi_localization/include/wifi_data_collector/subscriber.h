@@ -82,11 +82,8 @@ private:
   /// Did the robot record data since it last stopped?
   std_msgs::Bool recorded_since_stop;
 
-  /// Last received x position
-  double pos_x_;
-
-  /// Last received y position
-  double pos_y_;
+  /// Last pose received from amcl
+  geometry_msgs::PoseWithCovarianceStamped pose_;
 
   /// Last received max weight. This variable is an indication of the quality and accuracy of amcl
   double max_weight_;

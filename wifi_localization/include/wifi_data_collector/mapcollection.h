@@ -8,6 +8,7 @@
 #include <ros/publisher.h>
 #include <ros/node_handle.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 /**
  * Collection of all maps of the different mac addresses.
@@ -29,7 +30,9 @@ public:
    * @param y y position
    * @param wifi_signal wifi signal
    */
-  void add_data(std::string mac, double x, double y, double wifi_signal);
+  void
+  add_data(int timestamp, std::string mac, double wifi_signal, int channel,
+           geometry_msgs::PoseWithCovarianceStamped pose);
 
   /**
    * Add csv data to the maps.
@@ -44,8 +47,8 @@ private:
   /// Ros NodeHandle
   ros::NodeHandle n_;
 
-  /// date that is used to create the folder containing the csv files
-  std::string date_;
+  /// Determines if a new subfolder with the current date is created to store the data, or if it is added to existing data
+  bool store_data_separately_;
 
   /**
    * Returns the map matching to the mac address. If such a map does not exist yet it is going to be created.
@@ -56,6 +59,9 @@ private:
 
   /// service that publishes the wifi maps
   ros::ServiceServer wifi_map_service;
+
+  /// Directory all data is stored to
+  std::string dir_;
 
   /**
    * Publishes all wifi maps
