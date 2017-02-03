@@ -1,6 +1,9 @@
 <launch>
     <node name="wifi_publisher" pkg="wifi_localization" type="wifi_publisher" output="screen">
         <param name="wifi_interface" type="string" value="wlan0" />
-	    <rosparam param="channel_list">[1,6,11]</rosparam>
+	    <rosparam param="channel_list">[1,6,11,36,52,64,100,108,136]</rosparam>
+	    <param name="chans_per_scan" type="int" value = "3" />
+	    <param name="ms_till_discard" type="int" value = "100" />
+	    <param name="scans_per_sec" type="double" value = "1" />
     </node>
 </launch>
