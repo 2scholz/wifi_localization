@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 01.08.16.
-//
-
 #include "wifi_data_collector/subscriber.h"
 #include <fstream>
 #include <boost/filesystem/path.hpp>

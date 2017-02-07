@@ -15,8 +15,15 @@
 #include <boost/filesystem.hpp>
 #include <wifi_localization/MaxWeight.h>
 #include <wifi_localization/WifiPositionEstimation.h>
+#include <wifi_position_estimation/precomputedDataPoint.h>
 
 using namespace boost::filesystem;
+
+/// This typedef is used to hold the precomputed data.
+typedef std::map< Eigen::Vector2d, std::map<std::string, PrecomputedDataPoint>, std::function<bool(const Vector2d&, const Vector2d&)> > PrecomputedDataMap;
+
+///Comparison function for Vector2d. This is needed so that Vector2d can be used as a map key.
+auto cmp = [](const Vector2d& a, const Vector2d& b) { return a.norm() < b.norm(); };
 
 /**
  * WifiPositionEstimation class
@@ -60,11 +67,20 @@ private:
   /// Signals that a new position is already estimated, to stop it from starting multiple estimations.
   bool computing_;
 
+  /// Determines if the normal distributions for the random points on the map are going to be precomputed.
+  bool precompute_;
+
+  /// Map of the precomputed data. Basic structure: map<position, std::map<mac, data_point>>
+  PrecomputedDataMap precomputed_data_;
+
   /// map of macs and corresponding Gaussian processes.
   std::map<std::string, Process> gp_map_;
 
   /// Vector of incoming signal strengths and the corresponding mac-addresses.
   std::vector<std::pair<std::string, double>> macs_and_strengths_;
+
+  /// Vector of random points
+  std::vector<Eigen::Vector2d> random_points_;
 
   ros::Publisher initialpose_pub_;
   ros::Publisher wifi_pos_estimation_pub_;
@@ -85,5 +101,6 @@ private:
    * @return Most likely pose.
    */
   geometry_msgs::PoseWithCovarianceStamped compute_pose();
+
 };
 #endif //PROJECT_WIFI_POSITION_ESTIMATION_H

@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 26.07.16.
-//
-
 #include "wifi_position_estimation/gaussian_process/gaussian_process.h"
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
 
@@ -54,11 +50,31 @@ double Process::probability(double x, double y, double z)
   z = (z+100.0)/(100.0);
   Matrix<double, 2, 1> pos;
   pos << x, y;
+
+  double mean;
+  double variance;
+
   compute_cov_vector(x, y);
-  double mean = cov_vector_.transpose() * K_inv_ * training_observs_;
-  double variance = kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_;
+  mean = cov_vector_.transpose() * K_inv_ * training_observs_;
+  variance = kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_;
 
   return ((1.0 / sqrt(2.0 * M_PI * fabs(variance))) * exp(-(pow(z-mean,2.0)/(2.0*fabs(variance)))));
+}
+
+double Process::probability_precomputed(double mean, double variance, double z)
+{
+  return ((1.0 / sqrt(2.0 * M_PI * fabs(variance))) * exp(-(pow(z-mean,2.0)/(2.0*fabs(variance)))));
+}
+
+void Process::precompute_data(PrecomputedDataPoint& data, Eigen::Vector2d position)
+{
+  position(0) = (position(0) - x_mean_)/x_std_;
+  position(1) = (position(1) - y_mean_)/y_std_;
+  Matrix<double, 2, 1> pos;
+  pos << position(0), position(1);
+  compute_cov_vector(position(0), position(1));
+  data.mean_ = cov_vector_.transpose() * K_inv_ * training_observs_;
+  data.variance_ = kernel_.covariance(position, position) - cov_vector_.transpose() * K_inv_ * cov_vector_;
 }
 
 void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs)

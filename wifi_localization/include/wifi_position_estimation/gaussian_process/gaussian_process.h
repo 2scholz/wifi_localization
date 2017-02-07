@@ -1,8 +1,9 @@
 #ifndef PROJECT_GAUSSIAN_PROCESS_H
 #define PROJECT_GAUSSIAN_PROCESS_H
 #include "kernel.h"
-//#include <eigen3/Eigen/Dense>
 #include <Eigen/Dense>
+#include <map>
+#include <wifi_position_estimation/precomputedDataPoint.h>
 
 using namespace Eigen;
 
@@ -51,6 +52,15 @@ public:
   double probability(double x, double y, double z);
 
   /**
+   * Returns the probability, given the observation z and a precomputed mean and variance.
+   * @param mean
+   * @param variance
+   * @param z
+   * @return probability that the observation was made at the coordinate the mean and variance were computed with
+   */
+  double probability_precomputed(double mean, double variance, double z);
+
+  /**
    * Sets the training sets to new values. The values are normalized, before they are saved.
    * @param training_coords
    * @param training_observs
@@ -82,6 +92,13 @@ public:
    * @return hyperparameters as Vector
    */
   Vector3d get_params();
+
+  /**
+   * Precomputes the mean and variance for the given position. This can be used later for the position estimation
+   * @param data Will be modified with the computed mean and variance
+   * @param position The position the mean and variance are supposed to be computed for
+   */
+  void precompute_data(PrecomputedDataPoint& data, Eigen::Vector2d position);
 
 private:
   /**

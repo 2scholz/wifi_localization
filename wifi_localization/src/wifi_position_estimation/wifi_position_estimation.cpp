@@ -1,14 +1,16 @@
 #include "wifi_position_estimation/wifi_position_estimation.h"
 
-WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
+WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_data_(cmp)
 {
   std::string path = "";
   n_particles_ = 100;
   computing_ = false;
+  precompute_ = true;
 
   n.param("/wifi_position_estimation/path_to_csv", path, path);
   n.param("/wifi_position_estimation/n_particles", n_particles_, n_particles_);
   n.param("/wifi_position_estimation/quality_threshold", quality_threshold_, quality_threshold_);
+  n.param("/wifi_position_estimation/precompute", precompute_, precompute_);
 
   ROS_INFO("particle count: %i", n_particles_);
   if(!path.empty())
@@ -21,6 +23,36 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
   }
   ROS_INFO("Threshold to trigger Wi-Fi position estimation: %f", quality_threshold_);
   ROS_INFO("Starting Initialization.");
+
+  nav_msgs::GetMap srv_map;
+
+  ros::ServiceClient map_service_client = n.serviceClient<nav_msgs::GetMap>("static_map");
+
+  nav_msgs::OccupancyGrid amcl_map_;
+
+  if (map_service_client.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    amcl_map_ = srv_map.response.map;
+  }
+  else
+  {
+    ROS_ERROR("Failed to call map service");
+  }
+
+  A_ = {amcl_map_.info.origin.position.x, amcl_map_.info.origin.position.y + amcl_map_.info.height * amcl_map_.info.resolution};
+  Eigen::Vector2d B = {A_[0] + amcl_map_.info.width * amcl_map_.info.resolution, A_[1]};
+  Eigen::Vector2d C = {A_[0], amcl_map_.info.origin.position.y};
+  AB_ = B - A_;
+  AC_ = C - A_;
+
+  if(precompute_)
+  {
+    for(int i=0;i<n_particles_;i++)
+    {
+      random_points_.push_back(random_position());
+    }
+  }
 
   Matrix<double, 3, 1> starting_point;
   starting_point = {2.3, 2.3, -7.0};
@@ -75,31 +107,18 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n)
 
 
       std::replace(mac.begin(),mac.end(),'_',':');
-      gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
+      auto current_gp_it = gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
+      if(precompute_)
+      {
+        for(auto& random_position:random_points_)
+        {
+          PrecomputedDataPoint data_point{&current_gp_it->second, 0.0, 0.0};
+          data_point.gp_->precompute_data(data_point, random_position);
+          precomputed_data_[random_position][mac] = data_point;
+        }
+      }
     }
   }
-
-  nav_msgs::GetMap srv_map;
-
-  ros::ServiceClient map_service_client = n.serviceClient<nav_msgs::GetMap>("static_map");
-
-  nav_msgs::OccupancyGrid amcl_map_;
-
-  if (map_service_client.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-    amcl_map_ = srv_map.response.map;
-  }
-  else
-  {
-    ROS_ERROR("Failed to call map service");
-  }
-
-  A_ = {amcl_map_.info.origin.position.x, amcl_map_.info.origin.position.y + amcl_map_.info.height * amcl_map_.info.resolution};
-  Eigen::Vector2d B = {A_[0] + amcl_map_.info.width * amcl_map_.info.resolution, A_[1]};
-  Eigen::Vector2d C = {A_[0], amcl_map_.info.origin.position.y};
-  AB_ = B - A_;
-  AC_ = C - A_;
 
   compute_starting_point_service_ = n.advertiseService("compute_amcl_start_point", &WifiPositionEstimation::publish_pose_service, this);
   publish_accuracy_data_service_ = n.advertiseService("wifi_position_estimation", &WifiPositionEstimation::publish_accuracy_data, this);
@@ -154,30 +173,62 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
             boost::bind(&std::pair<std::string, double>::second, _1) >
             boost::bind(&std::pair<std::string, double>::second, _2));
 
-  for(int i = 0; i < n_particles_; ++i)
+  if(precompute_)
   {
-    double total_prob = 1.0;
-
-    Eigen::Vector2d random_point = random_position();
-
-    for(auto it:macs_and_strengths_)
+    // Iterate over the coordinates
+    for(auto& it:precomputed_data_)
     {
-      std::map<std::string, Process>::iterator data = gp_map_.find(it.first);
+      Eigen::Vector2d current_coordinate = it.first;
+      double total_prob = 1.0;
 
-      if(data != gp_map_.end())
+      // Iterate over the current macs and the associated strengths
+      for(auto& it2:macs_and_strengths_)
       {
-        double prob = data->second.probability(random_point(0), random_point(1), it.second);
-        if(isnan(prob))
-          prob = 1.0;
-        total_prob *= prob;
+
+        auto data = it.second.find(it2.first);
+
+        if(data != it.second.end())
+        {
+          double prob = data->second.gp_->probability_precomputed(data->second.mean_, data->second.variance_, it2.second);
+        }
+      }
+      if(total_prob > highest_prob)
+      {
+        highest_prob = total_prob;
+        most_likely_pos = {current_coordinate(0), current_coordinate(1)};
+        // std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
+        // std::cout << "With probability: " << highest_prob << std::endl;
       }
     }
-    if(total_prob > highest_prob)
+  }
+
+  else
+  {
+    for(int i = 0; i < n_particles_; ++i)
     {
-      highest_prob = total_prob;
-      most_likely_pos = {random_point(0), random_point(1)};
-      // std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
-      // std::cout << "With probability: " << highest_prob << std::endl;
+      double total_prob = 1.0;
+
+      Eigen::Vector2d random_point = random_position();
+
+      for(auto it:macs_and_strengths_)
+      {
+        std::map<std::string, Process>::iterator data = gp_map_.find(it.first);
+
+        if(data != gp_map_.end())
+        {
+          double prob = data->second.probability(random_point(0), random_point(1), it.second);
+          if(isnan(prob))
+            prob = 1.0;
+          total_prob *= prob;
+        }
+      }
+      if(total_prob > highest_prob)
+      {
+        highest_prob = total_prob;
+        most_likely_pos = {random_point(0), random_point(1)};
+        // std::cout << "Newest most likely pos: " << random_point(0) << " and " << random_point(1) << std::endl;
+        // std::cout << "With probability: " << highest_prob << std::endl;
+      }
     }
   }
 
