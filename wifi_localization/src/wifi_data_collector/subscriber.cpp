@@ -28,6 +28,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   n.param("/wifi_data_collector/threshold", threshold_, threshold_);
   n.param("/wifi_data_collector/record_only_stopped", record_only_stopped_, record_only_stopped_);
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
+  n.param("/wifi_data_collector/record_wifi_signals", record_, record_);
 
   maps.add_csv_data(path_to_csv);
 
@@ -43,8 +44,8 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   sync_ = new message_filters::Synchronizer<g_sync_policy>(g_sync_policy(100), *max_weight_sub_, *pose_sub_);
   sync_->registerCallback(boost::bind(&Subscriber::amclCallbackMethod, this, _1, _2));
 
-  recording_service = n.advertiseService("start_recording", &Subscriber::recording, this);
-  record_next_signal_service = n.advertiseService("record_next_signal", &Subscriber::record_next_signal, this);
+  recording_service = n.advertiseService("record_wifi_signals", &Subscriber::recording, this);
+  record_next_signal_service = n.advertiseService("record_next_wifi_signal", &Subscriber::record_next_signal, this);
 }
 
 //The callback method
@@ -64,7 +65,6 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
     {
       std::string mac_name = wifi_data_msg->macs.at(i);
       double wifi_dbm = wifi_data_msg->strengths.at(i);
-      ROS_INFO("timestamp: %d", wifi_data_msg->header.stamp.sec);
 
       //maps.add_data(0, mac_name, wifi_dbm, 0, pos_x_, pos_y_, 0);
       maps.add_data(wifi_data_msg->header.stamp.sec, mac_name, wifi_dbm, wifi_data_msg->channels.at(i), pose_);

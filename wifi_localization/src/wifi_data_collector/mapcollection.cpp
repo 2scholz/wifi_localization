@@ -50,6 +50,15 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
       }
     }
   }
+  else
+  {
+    dir_="./wifi_data/general/";
+    dir = dir_;
+    if (!(boost::filesystem::exists(dir)))
+    {
+      boost::filesystem::create_directory(dir);
+    }
+  }
 
 
   wifi_map_service = n.advertiseService("publish_wifi_maps", &MapCollection::publish_map_service, this);
