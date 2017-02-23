@@ -1,8 +1,8 @@
 <launch>
     <node name="wifi_position_estimation" pkg="wifi_localization" type="wifi_position_estimation" output="screen">
-        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/rosdata/wifi_data/23-02-2017 03:05:37" />
-        <param name="n_particles" type="int" value="1000" />
+        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/rosdata/wifi_data/23-02-2017 03:05:37/" />
+        <param name="n_particles" type="int" value="10000" />
         <param name="quality_threshold" type="double" value="1.0" />
-        <param name="precompute" type="bool" value="false" />
+        <param name="precompute" type="bool" value="true" />
     </node>
 </launch>
