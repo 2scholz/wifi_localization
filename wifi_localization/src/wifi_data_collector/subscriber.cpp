@@ -4,9 +4,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <geometry_msgs/Quaternion.h>
 
-Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
+Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string path_to_csv) :
   n_(n),
-  maps(n),
+  maps(n, path_to_csv),
   record_(false),
   record_next_(false),
   stands_still_(false),
@@ -15,7 +15,6 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   pose_()
 {
   recorded_since_stop.data = false;
-  std::string path_to_csv = "";
 
   pose_.pose.pose.position.x = 0.0;
   pose_.pose.pose.position.y = 0.0;
@@ -30,7 +29,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution) :
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
   n.param("/wifi_data_collector/record_wifi_signals", record_, record_);
 
-  maps.add_csv_data(path_to_csv);
+  // maps.add_csv_data(path_to_csv);
 
   ROS_INFO("Threshold at: %f",threshold_);
 

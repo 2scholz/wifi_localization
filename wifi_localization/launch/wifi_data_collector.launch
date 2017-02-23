@@ -5,5 +5,7 @@
         <param name="user_input" type="bool" value="false" />
         <param name="record_only_stopped" type="bool" value="false" />
         <param name="record_wifi_signals" type="bool" value="true" />
+        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/rosdata/wifi_data/23-02-2017 03:05:37" />
+
     </node>
 </launch>

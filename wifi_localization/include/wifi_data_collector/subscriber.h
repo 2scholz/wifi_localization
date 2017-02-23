@@ -40,7 +40,7 @@ public:
    * @param n ros NodeHandle
    * @param map_resolution Size of each cell side in meters
    */
-  Subscriber(ros::NodeHandle &n, float map_resolution);
+  Subscriber(ros::NodeHandle &n, float map_resolution, std::string path_to_csv);
 
 private:
   /// ros NodeHandle that is used for subscribers and publishers

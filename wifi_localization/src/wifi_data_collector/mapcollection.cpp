@@ -71,6 +71,8 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
 
 
   wifi_map_service = n.advertiseService("publish_wifi_maps", &MapCollection::publish_map_service, this);
+  if(dir_.back() != '/')
+    dir_ = dir_ + "/";
 
   add_csv_data(path_to_csv);
 
