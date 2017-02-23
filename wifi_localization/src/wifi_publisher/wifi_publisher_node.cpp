@@ -9,10 +9,13 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   std::string wifi_interface = "wlan0";
 
-  // Scan every channel at once, or split the scan so that a scan only return results for on particular channel.
-  int chans_per_scan = 3;
+  // How many channels should be scanned per scan? More channels means longer waiting time until results are returned.
+  int chans_per_scan = -1;
 
-  int ms_till_discard = 100;
+  // Results that are older than this threshold are discared.
+  int ms_till_discard = -1;
+
+  // How many scans per second should be done at most?
   double scans_per_sec = 1.0;
 
   // If no channels were given by the user, the entire spectrum is scanned.
