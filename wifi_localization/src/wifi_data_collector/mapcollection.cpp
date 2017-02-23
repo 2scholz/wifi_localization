@@ -29,7 +29,16 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
     boost::filesystem::create_directory(dir);
   }
 
-  if(store_data_separately_)
+  if(!path_to_csv.empty())
+  {
+    dir_ = path_to_csv;
+    dir = dir_;
+    if (!(boost::filesystem::exists(dir)))
+    {
+      boost::filesystem::create_directory(dir);
+    }
+  }
+  else if(store_data_separately_)
   {
     time(&rawtime);
     timeinfo = localtime(&rawtime);
