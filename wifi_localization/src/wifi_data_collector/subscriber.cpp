@@ -12,7 +12,8 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   stands_still_(false),
   record_only_stopped_(false),
   threshold_(1.0),
-  pose_()
+  pose_(),
+  wifi_data_since_stop_(0)
 {
   recorded_since_stop.data = false;
 
@@ -58,7 +59,7 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
   // Only record the data if max_weight is big enough and if user input mode is activated only if the user pressed the key to record.
-  if ((((max_weight_ < threshold_ && record_) || (max_weight_ < threshold_ && record_next_)) && (!record_only_stopped_||stands_still_)) && !wifi_data_msg->macs.empty())
+  if ((((max_weight_ < threshold_ && record_) || (max_weight_ < threshold_ && record_next_)) && (!record_only_stopped_||(stands_still_ && wifi_data_since_stop_ > 1))) && !wifi_data_msg->macs.empty())
   {
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
     {
@@ -80,6 +81,8 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
       recorded_since_stop_pub_.publish(recorded_since_stop);
     }
   }
+  if(stands_still_)
+    wifi_data_since_stop_++;
 }
 
 void Subscriber::odomCallbackMethod(const nav_msgs::Odometry::ConstPtr &msg)
@@ -88,6 +91,7 @@ void Subscriber::odomCallbackMethod(const nav_msgs::Odometry::ConstPtr &msg)
           msg->twist.twist.linear.x == 0.0 && msg->twist.twist.linear.y == 0.0 && msg->twist.twist.angular.z == 0.0;
   if(!stands_still_)
   {
+    wifi_data_since_stop_ = 0;
     recorded_since_stop.data = false;
     recorded_since_stop_pub_.publish(recorded_since_stop);
   }
