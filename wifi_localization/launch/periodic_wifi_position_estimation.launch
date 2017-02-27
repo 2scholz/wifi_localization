@@ -4,5 +4,7 @@
         <param name="n_particles" type="int" value="10000" />
         <param name="quality_threshold" type="double" value="1.0" />
         <param name="precompute" type="bool" value="true" />
+        <param name="publish_data_periodically" value="true" />
+        <param name="periodic_publishing_rate" value="0.10" />
     </node>
 </launch>

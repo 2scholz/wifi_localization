@@ -108,14 +108,19 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
 
 
       std::replace(mac.begin(),mac.end(),'_',':');
-      auto current_gp_it = gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
-      if(precompute_)
+      Eigen::Vector3d parameters = gp.get_params();
+
+      if(parameters(0) != 0.0 || parameters(1) != 0.0 || parameters(2) != 0.0)
       {
-        for(auto& random_position:random_points_)
+        auto current_gp_it = gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
+        if(precompute_)
         {
-          PrecomputedDataPoint data_point{&current_gp_it->second, 0.0, 0.0};
-          data_point.gp_->precompute_data(data_point, random_position);
-          precomputed_data_[random_position][mac] = data_point;
+          for(auto& random_position:random_points_)
+          {
+            PrecomputedDataPoint data_point{&current_gp_it->second, 0.0, 0.0};
+            data_point.gp_->precompute_data(data_point, random_position);
+            precomputed_data_[random_position][mac] = data_point;
+          }
         }
       }
     }
@@ -154,8 +159,10 @@ bool WifiPositionEstimation::publish_accuracy_data(std_srvs::Empty::Request &req
 {
   geometry_msgs::PoseWithCovarianceStamped pose = compute_pose();
   wifi_localization::WifiPositionEstimation msg;
-  msg.pos_x = pose.pose.pose.position.x;
-  msg.pos_y = pose.pose.pose.position.y;
+  msg.pos_x = x_pos_;
+  msg.pos_y = y_pos_;
+  msg.estimated_pos_x = pose.pose.pose.position.x;
+  msg.estimated_pos_y = pose.pose.pose.position.y;
   msg.amcl_diff = sqrt(pow((pose.pose.pose.position.x - x_pos_),2)+pow((pose.pose.pose.position.y - y_pos_),2));
   msg.header.stamp = ros::Time::now();
   wifi_pos_estimation_pub_.publish(msg);

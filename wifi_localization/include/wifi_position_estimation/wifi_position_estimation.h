@@ -46,6 +46,8 @@ public:
    */
   Eigen::Vector2d random_position();
 
+  bool publish_accuracy_data(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+
 private:
   /// Number of particles used for the position estimation
   int n_particles_;
@@ -91,7 +93,6 @@ private:
   ros::ServiceServer publish_accuracy_data_service_;
 
   bool publish_pose_service(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
-  bool publish_accuracy_data(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
   void wifi_callback(const wifi_localization::WifiState::ConstPtr& msg);
   void max_weight_callback(const wifi_localization::MaxWeight::ConstPtr& msg);
   void amcl_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
