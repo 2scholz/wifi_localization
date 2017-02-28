@@ -1,0 +1,10 @@
+<launch>
+    <node name="wifi_publisher" pkg="wifi_localization" type="wifi_publisher" output="screen">
+        <param name="wifi_interface" type="string" value="wlan0" />
+            <rosparam param="channel_list">[]</rosparam>
+            <param name="chans_per_scan" type="int" value = "-1" />
+            <param name="ms_till_discard" type="int" value = "-1" />
+            <param name="scans_per_sec" type="double" value = "0.10" />
+    </node>
+</launch>
+

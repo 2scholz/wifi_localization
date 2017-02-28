@@ -317,12 +317,15 @@ int wifi_scan_channels(struct netlink_channel *channel, uint32_t *channels, stru
   nlmsg_free(ssids_to_scan);  // Copied to `msg` above, no longer need this.
 
   int i = 0;
-  while(channels[i]!=0)
+  if(channels[0] != 0)
   {
-    nla_put_u32(freqs_to_scan, NL80211_FREQUENCY_ATTR_FREQ, channels[i]);
-    i++;
+    while(channels[i]!=0)
+    {
+      nla_put_u32(freqs_to_scan, NL80211_FREQUENCY_ATTR_FREQ, channels[i]);
+      i++;
+    }
+    nla_put_nested(msg, NL80211_ATTR_SCAN_FREQUENCIES, freqs_to_scan);
   }
-  nla_put_nested(msg, NL80211_ATTR_SCAN_FREQUENCIES, freqs_to_scan);
   nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, callback_trigger, &results);  // Add the callback.
   nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
   nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err);
