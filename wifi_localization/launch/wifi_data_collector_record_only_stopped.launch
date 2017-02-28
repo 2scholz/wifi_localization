@@ -3,5 +3,8 @@
         <param name="threshold" type="double" value="1.0" />
         <param name="user_input" type="bool" value="false" />
         <param name="record_only_stopped" type="bool" value="true" />
+        <param name="store_data_separately" type="bool" value="true" />
+        <param name="record_wifi_signals" type="bool" value="true" />
+        <param name="path_to_csv" type="string" value="" />
     </node>
 </launch>

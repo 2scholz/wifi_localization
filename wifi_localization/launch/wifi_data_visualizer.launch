@@ -4,8 +4,9 @@
         <param name="store_data_separately" type="bool" value="true" />
         <param name="user_input" type="bool" value="false" />
         <param name="record_only_stopped" type="bool" value="false" />
-        <param name="record_wifi_signals" type="bool" value="true" />
-        <param name="path_to_csv" type="string" value="" />
+        <param name="record_wifi_signals" type="bool" value="false" />
+        <param name="path_to_csv" type="string" value="/home/demo/2scholz_ws/data/lab_stopped/" />
+        <param name="publish_data_at_start" type="bool" value="true" />
 
     </node>
 </launch>

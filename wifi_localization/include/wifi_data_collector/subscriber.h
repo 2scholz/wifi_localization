@@ -40,7 +40,7 @@ public:
    * @param n ros NodeHandle
    * @param map_resolution Size of each cell side in meters
    */
-  Subscriber(ros::NodeHandle &n, float map_resolution);
+  Subscriber(ros::NodeHandle &n, float map_resolution, std::string path_to_csv);
 
 private:
   /// ros NodeHandle that is used for subscribers and publishers
@@ -87,6 +87,9 @@ private:
 
   /// Last received max weight. This variable is an indication of the quality and accuracy of amcl
   double max_weight_;
+
+  /// Counts how many times new wifi data was received since the robot came to a halt
+  int wifi_data_since_stop_;
 
   /// Collection of the maps for all the different mac addresses
   MapCollection maps;

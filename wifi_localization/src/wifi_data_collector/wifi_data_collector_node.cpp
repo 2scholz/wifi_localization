@@ -15,9 +15,14 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "wifi_data_collector");
   ros::NodeHandle n;
 
+  std::string path_to_csv = "";
+  n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
+
+
   nav_msgs::GetMap srv_map;
 
   ros::ServiceClient map_service_client = n.serviceClient<nav_msgs::GetMap>("static_map");
+
 
   nav_msgs::OccupancyGrid amcl_map_;
 
@@ -39,7 +44,7 @@ int main(int argc, char **argv)
 
   std::fill(MapData::empty_map_.data.begin(), MapData::empty_map_.data.end(), -1);
 
-  Subscriber *sub = new Subscriber(n, 0.20);
+  Subscriber *sub = new Subscriber(n, 0.20, path_to_csv);
 
   ros::spin();
 

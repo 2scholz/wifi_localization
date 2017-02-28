@@ -1,5 +1,6 @@
 #include "wifi_position_estimation/gaussian_process/gaussian_process.h"
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
+#include <iostream>
 
 Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
                  double signal_noise, double signal_var, double lengthscale) : kernel_(signal_noise, signal_var, lengthscale)
@@ -63,6 +64,7 @@ double Process::probability(double x, double y, double z)
 
 double Process::probability_precomputed(double mean, double variance, double z)
 {
+  z = (z+100.0)/(100.0);
   return ((1.0 / sqrt(2.0 * M_PI * fabs(variance))) * exp(-(pow(z-mean,2.0)/(2.0*fabs(variance)))));
 }
 

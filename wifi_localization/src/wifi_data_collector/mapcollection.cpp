@@ -18,7 +18,10 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
   time_t rawtime;
   struct tm *timeinfo;
   char buffer[80];
+  bool publish_data_at_start = false;
+
   n.param("/wifi_data_collector/store_data_separately", store_data_separately_, store_data_separately_);
+  n.param("/wifi_data_collector/publish_data_at_start", publish_data_at_start, publish_data_at_start);
 
   dir_ = "./wifi_data/";
 
@@ -29,7 +32,16 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
     boost::filesystem::create_directory(dir);
   }
 
-  if(store_data_separately_)
+  if(!path_to_csv.empty())
+  {
+    dir_ = path_to_csv;
+    dir = dir_;
+    if (!(boost::filesystem::exists(dir)))
+    {
+      boost::filesystem::create_directory(dir);
+    }
+  }
+  else if(store_data_separately_)
   {
     time(&rawtime);
     timeinfo = localtime(&rawtime);
@@ -62,8 +74,17 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
 
 
   wifi_map_service = n.advertiseService("publish_wifi_maps", &MapCollection::publish_map_service, this);
+  if(dir_.back() != '/')
+    dir_ = dir_ + "/";
 
   add_csv_data(path_to_csv);
+
+  if(publish_data_at_start)
+  {
+    std_srvs::Empty::Request req;
+    std_srvs::Empty::Response res;
+    publish_map_service(req, res);
+  }
 
 }
 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
 #include <ros/ros.h>
+#include <limits>
 
 void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double delta0, double delta_min, double delta_max,
                       double eta_minus, double eta_plus, double eps_stop)
@@ -14,6 +15,8 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
   Matrix<double, Dynamic, 1> best_params(3,1);
   best_params = params;
   double best = log(0);
+  if(!std::isfinite(best))
+    best = -std::numeric_limits<double>::max();
   p_.set_params(params);
 
   for(int i = 0; i < n; ++i)
@@ -54,5 +57,12 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
   //std::cout << "best likelihood: " << best << std::endl;
   ROS_INFO("Found parameters: %f, %f, %f \n With likelihood: %f \n With gradient: %f, %f, %f", best_params(0), best_params(1), best_params(2), best, grad_old(0), grad_old(1), grad_old(2));
   //std::cout << "gradient: " << grad_old << std::endl;
+  if(best == -std::numeric_limits<double>::max())
+  {
+    best_params(0) = 0.0;
+    best_params(1) = 0.0;
+    best_params(2) = 0.0;
+  }
+
   p_.set_params(best_params);
 }
