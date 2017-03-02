@@ -5,7 +5,7 @@
         <param name="user_input" type="bool" value="false" />
         <param name="record_only_stopped" type="bool" value="false" />
         <param name="record_wifi_signals" type="bool" value="false" />
-        <param name="path_to_csv" type="string" value="/home/demo/2scholz_ws/data/lab_stopped/" />
+        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/TAMS/data/lab/"/>
         <param name="publish_data_at_start" type="bool" value="true" />
 
     </node>

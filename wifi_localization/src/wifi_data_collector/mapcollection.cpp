@@ -88,11 +88,11 @@ MapCollection::MapCollection(ros::NodeHandle &n, std::string path_to_csv) : n_(n
 
 }
 
-void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal, int channel,
+void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
                              geometry_msgs::PoseWithCovarianceStamped pose)
 {
   std::map<std::string, MapData>::iterator data = get_map(mac);
-  data->second.insert_data(timestamp, wifi_signal, channel, pose);
+  data->second.insert_data(timestamp, wifi_signal, channel, pose, ssid);
 }
 
 void MapCollection::add_csv_data(std::string path)
@@ -132,7 +132,7 @@ std::map<std::string, MapData>::iterator MapCollection::get_map(std::string mac)
     new_mac->open(filename.c_str(), std::ios::out | std::ios::app);
 
     if(new_file)
-      *new_mac << "x, y, strengths, timestamp, channel, quat_x, quat_y, quat_z, quat_w" << "\n";
+      *new_mac << "x, y, strengths, timestamp, channel, quat_x, quat_y, quat_z, quat_w, ssid" << "\n";
 
     // ros won't allow topics with ':' in them, so they have to be replaced in the mac address.
     std::string mac_pub_name = "/" + mac;

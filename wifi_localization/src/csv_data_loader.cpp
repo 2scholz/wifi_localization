@@ -38,6 +38,7 @@ CSVDataLoader::CSVDataLoader(std::string path)
   std::string quat_y;
   std::string quat_z;
   std::string quat_w;
+  std::string ssid;
   while(file.good())
   {
     getline(file, x, ',');
@@ -48,7 +49,8 @@ CSVDataLoader::CSVDataLoader(std::string path)
     getline(file, quat_x, ',');
     getline(file, quat_y, ',');
     getline(file, quat_z, ',');
-    getline(file, quat_w, '\n');
+    getline(file, quat_w, ',');
+    getline(file, ssid, '\n');
 
     if(!file.good())
       break;
@@ -70,7 +72,7 @@ CSVDataLoader::CSVDataLoader(std::string path)
     int dt = std::stoi(timestamp);
     int dc = std::stoi(channel);
 
-    data_points_.emplace_back(pose, ds, dt, dc);
+    data_points_.emplace_back(pose, ds, dt, dc, ssid);
     i++;
   }
 }

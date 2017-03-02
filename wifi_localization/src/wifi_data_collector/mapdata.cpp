@@ -35,7 +35,7 @@ void MapData::publish_maps()
   global_minmax_interpol_pub_.publish(convert_to_grid(interpolate_map(normalized_map)));
 }
 
-void MapData::insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose, bool add_to_file)
+void MapData::insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose, std::string ssid, bool add_to_file)
 {
   double x = pose.pose.pose.position.x;
   double y = pose.pose.pose.position.y;
@@ -44,7 +44,7 @@ void MapData::insert_data(int timestamp, double wifi_signal, int channel, geomet
   if(add_to_file)
   {
     // Write the data to the csv file
-    (*file_) << x << "," << y << "," << wifi_signal << "," << timestamp << "," << channel << "," << orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << "\n";
+    (*file_) << x << "," << y << "," << wifi_signal << "," << timestamp << "," << channel << "," << orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w  << "," << ssid << "\n";
 
     file_->flush();
   }
@@ -88,7 +88,7 @@ void MapData::load_csv_data(std::string path)
   CSVDataLoader csv_data(path);
   for(auto data_point:csv_data.data_points_)
   {
-    insert_data(data_point.timestamp_, data_point.signal_strength_, data_point.channel_, data_point.pose_, false);
+    insert_data(data_point.timestamp_, data_point.signal_strength_, data_point.channel_, data_point.pose_, data_point.ssid_, false);
   }
 }
 

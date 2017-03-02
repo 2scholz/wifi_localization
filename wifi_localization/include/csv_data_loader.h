@@ -21,7 +21,11 @@ struct DataPoint
   /// Channels of the recorded Wi-Fi signal
   int channel_;
 
-  DataPoint(geometry_msgs::PoseWithCovarianceStamped pose, double signal_strength, int timestamp, int channel) : pose_(pose), signal_strength_(signal_strength), timestamp_(timestamp), channel_(channel)
+  /// The ssid that belongs to the signal
+  std::string ssid_;
+
+  DataPoint(geometry_msgs::PoseWithCovarianceStamped pose, double signal_strength, int timestamp, int channel, std::string ssid) :
+    pose_(pose), signal_strength_(signal_strength), timestamp_(timestamp), channel_(channel), ssid_(ssid)
   {}
 };
 

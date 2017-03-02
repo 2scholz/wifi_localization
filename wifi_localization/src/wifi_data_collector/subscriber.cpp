@@ -65,9 +65,9 @@ void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr
     {
       std::string mac_name = wifi_data_msg->macs.at(i);
       double wifi_dbm = wifi_data_msg->strengths.at(i);
+      std::string ssid = wifi_data_msg->ssids.at(i);
 
-      //maps.add_data(0, mac_name, wifi_dbm, 0, pos_x_, pos_y_, 0);
-      maps.add_data(wifi_data_msg->header.stamp.sec, mac_name, wifi_dbm, wifi_data_msg->channels.at(i), pose_);
+      maps.add_data(wifi_data_msg->header.stamp.sec, mac_name, wifi_dbm, wifi_data_msg->channels.at(i), ssid, pose_);
     }
     if(record_next_)
     {

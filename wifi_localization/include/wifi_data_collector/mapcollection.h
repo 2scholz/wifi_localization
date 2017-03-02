@@ -29,9 +29,12 @@ public:
    * @param x x position
    * @param y y position
    * @param wifi_signal wifi signal
+   * @param channel channel of the signal
+   * @param ssid ssid of the signal
+   * @param pose pose the signal was recorded in
    */
   void
-  add_data(int timestamp, std::string mac, double wifi_signal, int channel,
+  add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
            geometry_msgs::PoseWithCovarianceStamped pose);
 
   /**

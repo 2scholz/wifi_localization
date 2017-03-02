@@ -65,7 +65,7 @@ public:
    * @param y y value of the cell
    * @param wifi_signal signal that is going to be added to the cell
    */
-  void insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose, bool add_to_file=true);
+  void insert_data(int timestamp, double wifi_signal, int channel, geometry_msgs::PoseWithCovarianceStamped pose, std::string ssid, bool add_to_file=true);
 /**
    * Load data from csv file from old recording sessions
    * @param path Path to the folder containing the csv files
