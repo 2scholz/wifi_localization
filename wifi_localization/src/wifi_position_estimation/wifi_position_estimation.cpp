@@ -1,6 +1,8 @@
+#include <grid_map_ros/GridMapRosConverter.hpp>
 #include "wifi_position_estimation/wifi_position_estimation.h"
 
-WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_data_(cmp)
+WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_data_(cmp),
+                                                                   gp_grid_map_({"gp_mean", "gp_variance"})
 {
   std::string path = "";
   n_particles_ = 100;
@@ -126,13 +128,23 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
     }
   }
 
+  gp_grid_map_.setFrameId("map");
+
+  grid_map::GridMapRosConverter::fromOccupancyGrid(amcl_map_, "gp_mean", gp_grid_map_);
+  grid_map::GridMapRosConverter::fromOccupancyGrid(amcl_map_, "gp_variance", gp_grid_map_);
+  gp_grid_map_.setGeometry(gp_grid_map_.getLength(),0.20,gp_grid_map_.getPosition());
+
+  grid_map_publisher_ = n.advertise<grid_map_msgs::GridMap>("grid_map", 1000, true);
+
   compute_starting_point_service_ = n.advertiseService("compute_amcl_start_point", &WifiPositionEstimation::publish_pose_service, this);
   publish_accuracy_data_service_ = n.advertiseService("wifi_position_estimation", &WifiPositionEstimation::publish_accuracy_data, this);
+  publish_grid_map_service_ = n.advertiseService("create_map_of_gp", &WifiPositionEstimation::publish_gp_map_service, this);
   initialpose_pub_ = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1000);
   wifi_sub_ = n.subscribe("wifi_data", 1000, &WifiPositionEstimation::wifi_callback, this);
   max_weight_sub_ = n.subscribe("max_weight", 1000, &WifiPositionEstimation::max_weight_callback, this);
   wifi_pos_estimation_pub_ = n.advertise<wifi_localization::WifiPositionEstimation>("wifi_pos_estimation_data", 1000);
   amcl_sub_ = n.subscribe("amcl_pose", 1000, &WifiPositionEstimation::amcl_callback, this);
+
   ROS_INFO("Finished initialization.");
 }
 
@@ -295,4 +307,32 @@ void WifiPositionEstimation::amcl_callback(const geometry_msgs::PoseWithCovarian
 {
   x_pos_ = msg->pose.pose.position.x;
   y_pos_ = msg->pose.pose.position.y;
+}
+
+bool WifiPositionEstimation::publish_gp_map_service(wifi_localization::PlotGP::Request &req,
+                                                    wifi_localization::PlotGP::Response &res)
+{
+  std::string mac = req.mac;
+
+  auto it = gp_map_.find(mac);
+  if(it == gp_map_.end())
+  {
+    ROS_ERROR("The mac provided for the service for publishing the grid map of the gaussian process was not found.");
+    return false;
+  }
+
+  ROS_INFO("Found mac. Begin to plot map.");
+  it->second.create_gp_mean_map(gp_grid_map_);
+  it->second.create_gp_variance_map(gp_grid_map_);
+
+  ros::Time time = ros::Time::now();
+
+  // Publish grid map.
+  gp_grid_map_.setTimestamp(time.toNSec());
+  grid_map_msgs::GridMap message;
+  grid_map::GridMapRosConverter::toMessage(gp_grid_map_, message);
+  grid_map_publisher_.publish(message);
+  ROS_INFO("Plot finished.");
+  return true;
+
 }

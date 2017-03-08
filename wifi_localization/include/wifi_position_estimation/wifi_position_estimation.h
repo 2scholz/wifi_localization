@@ -14,6 +14,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <wifi_localization/MaxWeight.h>
+#include <wifi_localization/PlotGP.h>
 #include <wifi_localization/WifiPositionEstimation.h>
 #include <wifi_position_estimation/precomputedDataPoint.h>
 
@@ -84,15 +85,20 @@ private:
   /// Vector of random points
   std::vector<Eigen::Vector2d> random_points_;
 
+  grid_map::GridMap gp_grid_map_;
+
   ros::Publisher initialpose_pub_;
   ros::Publisher wifi_pos_estimation_pub_;
+  ros::Publisher grid_map_publisher_;
   ros::Subscriber wifi_sub_;
   ros::Subscriber max_weight_sub_;
   ros::Subscriber amcl_sub_;
   ros::ServiceServer compute_starting_point_service_;
   ros::ServiceServer publish_accuracy_data_service_;
+  ros::ServiceServer publish_grid_map_service_;
 
   bool publish_pose_service(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
+  bool publish_gp_map_service(wifi_localization::PlotGP::Request &req, wifi_localization::PlotGP::Response &res);
   void wifi_callback(const wifi_localization::WifiState::ConstPtr& msg);
   void max_weight_callback(const wifi_localization::MaxWeight::ConstPtr& msg);
   void amcl_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);

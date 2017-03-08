@@ -10,6 +10,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   sensor_msgs
   actionlib
+  grid_map_core
+  grid_map_ros
+  grid_map_msgs
 )
 
 find_package(Boost REQUIRED)
@@ -23,11 +26,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  PlotGP.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -74,7 +76,7 @@ add_executable(wifi_position_estimation src/wifi_position_estimation/wifi_positi
 add_executable(accuracy_experiment src/experiments/wifi_pos_est_accuracy_node.cpp)
 add_executable(accuracy_experiment2 src/experiments/wifi_pos_est_accuracy2_node.cpp)
 add_executable(kidnapping_experiment src/experiments/wifi_pos_est_kidnapping_node.cpp)
-add_executable(wifi_publisher src/wifi_publisher/wifi_publisher_node.cpp src/wifi_publisher/wifi_scan.c src/wifi_publisher/wifi_publisher.cpp)
+#add_executable(wifi_publisher src/wifi_publisher/wifi_publisher_node.cpp src/wifi_publisher/wifi_scan.c src/wifi_publisher/wifi_publisher.cpp)
 
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -82,7 +84,7 @@ add_dependencies(wifi_position_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 add_dependencies(accuracy_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(accuracy_experiment2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(kidnapping_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(wifi_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(wifi_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(wifi_data_collector

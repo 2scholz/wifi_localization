@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <map>
 #include <wifi_position_estimation/precomputedDataPoint.h>
+#include <grid_map_msgs/GridMap.h>
+#include <grid_map_core/grid_map_core.hpp>
 
 using namespace Eigen;
 
@@ -99,6 +101,20 @@ public:
    * @param position The position the mean and variance are supposed to be computed for
    */
   void precompute_data(PrecomputedDataPoint& data, Eigen::Vector2d position);
+
+
+  /**
+   * Creates a map if the mean of the gaussian process.
+   * @param map The map that is used to store the mean.
+   */
+  void create_gp_mean_map(grid_map::GridMap &map);
+
+  /**
+   * Plots the variance of the gaussian process using a grid map.
+   * @param map An empty map that was already initialized using the map of the environment the data of the gp was
+   * recorded from.
+   */
+  void create_gp_variance_map(grid_map::GridMap &map);
 
 private:
   /**

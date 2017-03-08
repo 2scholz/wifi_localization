@@ -1,6 +1,7 @@
 #include "wifi_position_estimation/gaussian_process/gaussian_process.h"
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
 #include <iostream>
+#include <grid_map_ros/grid_map_ros.hpp>
 
 Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
                  double signal_noise, double signal_var, double lengthscale) : kernel_(signal_noise, signal_var, lengthscale)
@@ -166,4 +167,53 @@ Vector3d Process::get_params()
 {
   Vector3d params = kernel_.get_parameters();
   return params;
+}
+
+void Process::create_gp_mean_map(grid_map::GridMap &map)
+{
+  for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
+    grid_map::Position position;
+    map.getPosition(*it, position);
+    double x = (position.x() - x_mean_)/x_std_;
+    double y = (position.y() - y_mean_)/y_std_;
+    compute_cov_vector(x,y);
+
+    double mean = cov_vector_.transpose() * K_inv_ * training_observs_;
+    //if(!(mean < 0.00001 && mean > -0.00001))
+    //{
+    //std::cout << mean << std::endl;
+    map.at("gp_mean", *it) = mean;
+  }
+
+  //ros::Time time = ros::Time::now();
+
+  // Publish grid map.
+  //map.setTimestamp(time.toNSec());
+  //grid_map_msgs::GridMap message;
+  //grid_map::GridMapRosConverter::toMessage(map, message);
+  //return message;
+}
+
+void Process::create_gp_variance_map(grid_map::GridMap &map)
+{
+  for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
+    grid_map::Position position;
+    map.getPosition(*it, position);
+    double x = (position.x() - x_mean_)/x_std_;
+    double y = (position.y() - y_mean_)/y_std_;
+    compute_cov_vector(x,y);
+    Matrix<double, 2, 1> pos;
+    pos << x, y;
+    double variance = sqrt(kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_);
+
+    map.at("gp_variance", *it) = variance;
+  }
+
+  //ros::Time time = ros::Time::now();
+
+  // Publish grid map.
+  //map.setTimestamp(time.toNSec());
+  //grid_map_msgs::GridMap message;
+  //grid_map::GridMapRosConverter::toMessage(map, message);
+  //return message;
 }
