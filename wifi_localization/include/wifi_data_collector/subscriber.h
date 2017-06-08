@@ -11,6 +11,7 @@
 
 // Messages
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseWithCovariance.h>
 #include "wifi_localization/MaxWeight.h"
 #include "wifi_localization/WifiState.h"
 #include <nav_msgs/OccupancyGrid.h>
@@ -58,6 +59,9 @@ private:
   /// Subscriber for odometry data. Used to check if the robot is stopped.
   ros::Subscriber odom_sub_;
 
+  /// Subscriber for gps positioning data
+  ros::Subscriber gps_sub_;
+
   /// Publishes if the robot recorded data since the robot stopped.
   ros::Publisher recorded_since_stop_pub_;
 
@@ -79,11 +83,20 @@ private:
   /// Is the robot stopped?
   bool stands_still_;
 
+  /// Use gps data instead of amcl data?
+  bool use_gps_;
+
   /// Did the robot record data since it last stopped?
   std_msgs::Bool recorded_since_stop;
 
   /// Last pose received from amcl
   geometry_msgs::PoseWithCovarianceStamped pose_;
+
+  /// Last pose received from GPS
+  geometry_msgs::PoseWithCovariance gps_pose_;
+
+  /// The first gps position received. This is used, to compute x,y coordinates that are in the range of a few meters
+  geometry_msgs::PoseWithCovariance start_gps_pose_;
 
   /// Last received max weight. This variable is an indication of the quality and accuracy of amcl
   double max_weight_;
@@ -120,6 +133,12 @@ private:
    * @param msg Odometry data of the turtlebot
    */
   void odomCallbackMethod(const nav_msgs::Odometry::ConstPtr& msg);
+
+  /**
+   * Records the last pose given by the gps
+   * @param msg Odometry, usually published by utm_odometry_node
+   */
+  void gpsCallbackMethod(const nav_msgs::Odometry::ConstPtr& msg);
 
   /**
    * Used to either start or stop recording via a service call

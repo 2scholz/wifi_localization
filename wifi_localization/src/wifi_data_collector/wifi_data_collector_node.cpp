@@ -33,8 +33,20 @@ int main(int argc, char **argv)
   }
   else
   {
-    ROS_ERROR("Failed to call map service");
-    return 0;
+    ROS_ERROR("Failed to call map service. Using default map instead.");
+    amcl_map_.info.map_load_time = ros::Time::now();
+    amcl_map_.info.resolution = 0.20;
+    amcl_map_.info.height = 5000;
+    amcl_map_.info.width = 5000;
+
+    amcl_map_.info.origin.position.x = 0.0;
+    amcl_map_.info.origin.position.y = 0.0;
+    amcl_map_.info.origin.position.z = 0.0;
+
+    amcl_map_.info.origin.orientation.x = 0.0;
+    amcl_map_.info.origin.orientation.y = 0.0;
+    amcl_map_.info.origin.orientation.z = 0.0;
+    amcl_map_.info.origin.orientation.w = 1.0;
   }
   MapData::empty_map_ = amcl_map_;
   MapData::empty_map_.info.resolution = 0.20;

@@ -11,6 +11,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   record_next_(false),
   stands_still_(false),
   record_only_stopped_(false),
+  use_gps_(false),
   threshold_(1.0),
   pose_(),
   wifi_data_since_stop_(0)
@@ -25,10 +26,16 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   pose_.pose.pose.orientation.z = 0.0;
   pose_.pose.pose.orientation.w = 0.0;
 
+  gps_pose_.pose.position.x = -1.0;
+  gps_pose_.pose.position.y = -1.0;
+  start_gps_pose_.pose.position.x = -1.0;
+  start_gps_pose_.pose.position.y = -1.0;
+
   n.param("/wifi_data_collector/threshold", threshold_, threshold_);
   n.param("/wifi_data_collector/record_only_stopped", record_only_stopped_, record_only_stopped_);
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
   n.param("/wifi_data_collector/record_wifi_signals", record_, record_);
+  n.param("/wifi_data_collector/use_gps", use_gps_, use_gps_);
 
   // maps.add_csv_data(path_to_csv);
 
@@ -38,6 +45,7 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(n, "amcl_pose", 100);
   wifi_data_sub_ = n.subscribe("wifi_data", 1, &Subscriber::wifiCallbackMethod, this);
   odom_sub_ = n.subscribe("odom",1, &Subscriber::odomCallbackMethod, this);
+  gps_sub_ = n.subscribe("gps_odom", 1, &Subscriber::gpsCallbackMethod, this);
 
   recorded_since_stop_pub_ = n.advertise<std_msgs::Bool>("recorded_since_stop", 1, true);
 
@@ -56,10 +64,30 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
   max_weight_ = max_weight_msg->max_weight;
 }
 
+void Subscriber::gpsCallbackMethod(const nav_msgs::Odometry::ConstPtr &msg)
+{
+  if(start_gps_pose_.pose.position.x == -1.0 && start_gps_pose_.pose.position.y == -1.0)
+    start_gps_pose_ = msg->pose;
+  gps_pose_.pose.position.x = msg->pose.pose.position.x - start_gps_pose_.pose.position.x;
+  gps_pose_.pose.position.y = msg->pose.pose.position.y - start_gps_pose_.pose.position.y;
+}
+
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)
 {
+  if(use_gps_)
+  {
+    for (int i = 0; i < wifi_data_msg->macs.size(); i++)
+    {
+      std::string mac_name = wifi_data_msg->macs.at(i);
+      double wifi_dbm = wifi_data_msg->strengths.at(i);
+      std::string ssid = wifi_data_msg->ssids.at(i);
+
+      maps.add_data(wifi_data_msg->header.stamp.sec, mac_name, wifi_dbm, wifi_data_msg->channels.at(i), ssid, gps_pose_);
+    }
+  }
+
   // Only record the data if max_weight is big enough and if user input mode is activated only if the user pressed the key to record.
-  if ((((max_weight_ < threshold_ && record_) || (max_weight_ < threshold_ && record_next_)) && (!record_only_stopped_||(stands_still_ && wifi_data_since_stop_ > 1))) && !wifi_data_msg->macs.empty())
+  else if ((((max_weight_ < threshold_ && record_) || (max_weight_ < threshold_ && record_next_)) && (!record_only_stopped_||(stands_still_ && wifi_data_since_stop_ > 1))) && !wifi_data_msg->macs.empty())
   {
     for (int i = 0; i < wifi_data_msg->macs.size(); i++)
     {

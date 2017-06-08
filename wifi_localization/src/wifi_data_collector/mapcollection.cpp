@@ -95,6 +95,12 @@ void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal,
   data->second.insert_data(timestamp, wifi_signal, channel, pose, ssid);
 }
 
+void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
+                             geometry_msgs::PoseWithCovariance pose)
+{
+
+}
+
 void MapCollection::add_csv_data(std::string path)
 {
   if(path.empty())

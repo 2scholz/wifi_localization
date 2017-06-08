@@ -33,9 +33,20 @@ public:
    * @param ssid ssid of the signal
    * @param pose pose the signal was recorded in
    */
-  void
-  add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
-           geometry_msgs::PoseWithCovarianceStamped pose);
+  void add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
+                geometry_msgs::PoseWithCovarianceStamped pose);
+
+  /**
+   * add data to a map using a PoseWithCovariance message. This is used for gps positioning data.
+   * @param timestamp
+   * @param mac
+   * @param wifi_signal
+   * @param channel
+   * @param ssid
+   * @param pose
+   */
+  void add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
+                geometry_msgs::PoseWithCovariance pose);
 
   /**
    * Add csv data to the maps.
