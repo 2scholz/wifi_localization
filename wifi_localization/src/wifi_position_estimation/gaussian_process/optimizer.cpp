@@ -6,13 +6,13 @@
 void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double delta0, double delta_min, double delta_max,
                       double eta_minus, double eta_plus, double eps_stop)
 {
-  Matrix<double, Dynamic, 1> delta(3,1);
-  delta << delta0, delta0, delta0;
-  Matrix<double, Dynamic, 1> grad_old(3,1);
-  grad_old << 0.0, 0.0, 0.0;
-  Matrix<double, Dynamic, 1> params(3,1);
+  Matrix<double, Dynamic, 1> delta(4,1);
+  delta << delta0, delta0, delta0, delta0;
+  Matrix<double, Dynamic, 1> grad_old(4,1);
+  grad_old << 0.0, 0.0, 0.0, 0.0;
+  Matrix<double, Dynamic, 1> params(4,1);
   params = starting_point;
-  Matrix<double, Dynamic, 1> best_params(3,1);
+  Matrix<double, Dynamic, 1> best_params(4,1);
   best_params = params;
   double best = log(0);
   if(!std::isfinite(best))
@@ -39,6 +39,7 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
       }
       params(j,0) += (-sgn(grad(j,0))) * delta(j,0);
     }
+
     grad_old = grad;
     if(grad_old.norm() <= eps_stop)
     {
@@ -46,6 +47,9 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
     }
     p_.set_params(params);
     double lik = -p_.log_likelihood();
+
+    if(std::isnan(grad(0)))
+      std::cout << "Gradient is nan with params: " << params(0) << " " << params(1) << " " << params(2) << " " << params(3) << std::endl;
 
     if(lik > best && std::isfinite(lik))
     {
@@ -55,13 +59,13 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
     //std::cout << "likelihood: " << lik << std::endl;
   }
   //std::cout << "best likelihood: " << best << std::endl;
-  ROS_INFO("Found parameters: %f, %f, %f \n With likelihood: %f \n With gradient: %f, %f, %f", best_params(0), best_params(1), best_params(2), best, grad_old(0), grad_old(1), grad_old(2));
-  //std::cout << "gradient: " << grad_old << std::endl;
+  ROS_INFO("Found parameters: %f, %f, %f, %f \n With likelihood: %f \n With gradient: %f, %f, %f, %f", best_params(0), best_params(1), best_params(2), best_params(3), best, grad_old(0), grad_old(1), grad_old(2), grad_old(3));
   if(best == -std::numeric_limits<double>::max())
   {
     best_params(0) = 0.0;
     best_params(1) = 0.0;
     best_params(2) = 0.0;
+    best_params(3) = 0.0;
   }
 
   p_.set_params(best_params);

@@ -72,11 +72,11 @@ install(PROGRAMS
 ## Declare a C++ executable
 add_executable(wifi_data_collector src/wifi_data_collector/wifi_data_collector_node.cpp src/wifi_data_collector/subscriber.cpp src/wifi_data_collector/mapdata.cpp src/wifi_data_collector/mapcollection.cpp src/csv_data_loader.cpp)
 add_executable(map_traverser src/experiments/map_traverser_node.cpp)
-add_executable(wifi_position_estimation src/wifi_position_estimation/wifi_position_estimation_node.cpp src/wifi_position_estimation/gaussian_process/gaussian_process.cpp src/wifi_position_estimation/gaussian_process/kernel.cpp src/wifi_position_estimation/gaussian_process/optimizer.cpp src/csv_data_loader.cpp src/wifi_position_estimation/wifi_position_estimation.cpp)
+add_executable(wifi_position_estimation src/wifi_position_estimation/wifi_position_estimation_node.cpp src/wifi_position_estimation/gaussian_process/gaussian_process.cpp src/wifi_position_estimation/gaussian_process/ard_se_kernel.cpp src/wifi_position_estimation/gaussian_process/optimizer.cpp src/csv_data_loader.cpp src/wifi_position_estimation/wifi_position_estimation.cpp)
 add_executable(accuracy_experiment src/experiments/wifi_pos_est_accuracy_node.cpp)
 add_executable(accuracy_experiment2 src/experiments/wifi_pos_est_accuracy2_node.cpp)
 add_executable(kidnapping_experiment src/experiments/wifi_pos_est_kidnapping_node.cpp)
-#add_executable(wifi_publisher src/wifi_publisher/wifi_publisher_node.cpp src/wifi_publisher/wifi_scan.c src/wifi_publisher/wifi_publisher.cpp)
+add_executable(wifi_publisher src/wifi_publisher/wifi_publisher_node.cpp src/wifi_publisher/wifi_scan.c src/wifi_publisher/wifi_publisher.cpp)
 
 add_dependencies(wifi_data_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_traverser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -84,7 +84,7 @@ add_dependencies(wifi_position_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 add_dependencies(accuracy_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(accuracy_experiment2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(kidnapping_experiment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(wifi_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wifi_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(wifi_data_collector

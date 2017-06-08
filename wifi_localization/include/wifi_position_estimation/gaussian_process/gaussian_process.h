@@ -1,6 +1,6 @@
 #ifndef PROJECT_GAUSSIAN_PROCESS_H
 #define PROJECT_GAUSSIAN_PROCESS_H
-#include "kernel.h"
+#include "ard_se_kernel.h"
 #include <Eigen/Dense>
 #include <map>
 #include <wifi_position_estimation/precomputedDataPoint.h>
@@ -10,7 +10,7 @@
 using namespace Eigen;
 
 /**
- * Determines the sign of a given value.
+ * Determines the sirgn of a given value.
  * @param val Value the sign is to be determined of
  * @return Sign as integer, so either 1 or -1
  */
@@ -36,7 +36,7 @@ public:
    * @param lengthscale hyperparameter of the kernel
    */
   Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
-          double signal_noise = 0.0, double signal_var = 0.0, double lengthscale = 0.0);
+          double signal_noise = 0.0, double signal_var = 0.0, Vector2d lengthscale = {0.0, 0.0});
 
   /**
    * Trains the parameters, using the optimization class and the provided rprop algorithm
@@ -74,7 +74,7 @@ public:
    * @param params
    */
   void set_params(const Matrix<double, Dynamic, 1> &params);
-  void set_params(double signal_noise, double signal_var, double lengthscale);
+  void set_params(double signal_noise, double signal_var, double lengthscale1, double lengthscale2);
 
   /**
    * Log likelihood of the Gaussian process. This can be used to determine how well the process fits to the training
@@ -93,7 +93,7 @@ public:
    * Get the hyperparameters
    * @return hyperparameters as Vector
    */
-  Vector3d get_params();
+  Vector4d get_params();
 
   /**
    * Precomputes the mean and variance for the given position. This can be used later for the position estimation
@@ -131,7 +131,8 @@ private:
 
   Matrix<double, Dynamic, 2> training_coords_;
   Matrix<double, Dynamic, 1> training_observs_;
-  Kernel kernel_;
+  ARD_SE_Kernel ard_se_kernel_;
+
   Matrix<double, Dynamic, Dynamic> K_;
   Matrix<double, Dynamic, Dynamic> K_inv_;
   Matrix<double, Dynamic, 1> cov_vector_;

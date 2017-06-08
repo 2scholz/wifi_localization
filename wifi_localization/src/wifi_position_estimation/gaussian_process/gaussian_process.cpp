@@ -4,7 +4,7 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 
 Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
-                 double signal_noise, double signal_var, double lengthscale) : kernel_(signal_noise, signal_var, lengthscale)
+                 double signal_noise, double signal_var, Vector2d lengthscale) : ard_se_kernel_(signal_noise, signal_var, lengthscale)
 {
   set_training_values(training_coords, training_observs);
   update_covariance_matrix();
@@ -26,11 +26,12 @@ void Process::update_covariance_matrix()
       Matrix<double, 2, 1> pos2;
       pos1 << training_coords_(i,0), training_coords_(i,1);
       pos2 << training_coords_(j,0), training_coords_(j,1);
-      K_(i,j) = kernel_.covariance(pos1, pos2);
+      K_(i,j) = ard_se_kernel_.covariance(pos1,pos2);
     }
   }
 
   K_inv_ = K_.fullPivLu().solve(MatrixXd::Identity(n,n));
+  //K_inv_ = K_.colPivHouseholderQr().solve(MatrixXd::Identity(n,n));
 }
 
 void Process::compute_cov_vector(double x, double y)
@@ -41,7 +42,7 @@ void Process::compute_cov_vector(double x, double y)
   {
     Matrix<double, 2, 1> pos2;
     pos2 << training_coords_(i,0), training_coords_(i,1);
-    cov_vector_(i,0) = kernel_.covariance(pos1, pos2);
+    cov_vector_(i,0) = ard_se_kernel_.covariance(pos1, pos2);
   }
 }
 
@@ -58,7 +59,7 @@ double Process::probability(double x, double y, double z)
 
   compute_cov_vector(x, y);
   mean = cov_vector_.transpose() * K_inv_ * training_observs_;
-  variance = kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_;
+  variance = ard_se_kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_;
 
   return ((1.0 / sqrt(2.0 * M_PI * fabs(variance))) * exp(-(pow(z-mean,2.0)/(2.0*fabs(variance)))));
 }
@@ -77,7 +78,7 @@ void Process::precompute_data(PrecomputedDataPoint& data, Eigen::Vector2d positi
   pos << position(0), position(1);
   compute_cov_vector(position(0), position(1));
   data.mean_ = cov_vector_.transpose() * K_inv_ * training_observs_;
-  data.variance_ = kernel_.covariance(position, position) - cov_vector_.transpose() * K_inv_ * cov_vector_;
+  data.variance_ = ard_se_kernel_.covariance(position, position) - cov_vector_.transpose() * K_inv_ * cov_vector_;
 }
 
 void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs)
@@ -102,13 +103,13 @@ void Process::set_training_values(Matrix<double, Dynamic, 2> &training_coords, M
 
 void Process::set_params(const Matrix<double, Dynamic, 1> &params)
 {
-  kernel_ = Kernel(params(0,0), params(1,0), params(2,0));
+  ard_se_kernel_ = ARD_SE_Kernel(params(0,0), params(1,0), params(2,0), params(3,0));
   update_covariance_matrix();
 }
 
-void Process::set_params(double signal_noise, double signal_var, double lengthscale)
+void Process::set_params(double signal_noise, double signal_var, double lengthscale1, double lengthscale2)
 {
-  kernel_ = Kernel(signal_noise, signal_var, lengthscale);
+  ard_se_kernel_ = ARD_SE_Kernel(signal_noise, signal_var, lengthscale1, lengthscale2);
   update_covariance_matrix();
 }
 
@@ -134,6 +135,7 @@ Matrix<double, Dynamic, 1> Process::log_likelihood_gradient()
   Matrix<double, Dynamic, Dynamic> K1(n,n);
   Matrix<double, Dynamic, Dynamic> K2(n,n);
   Matrix<double, Dynamic, Dynamic> K3(n,n);
+  Matrix<double, Dynamic, Dynamic> K4(n,n);
 
   Matrix<double,2,1> pos1;
   Matrix<double,2,1> pos2;
@@ -143,10 +145,11 @@ Matrix<double, Dynamic, 1> Process::log_likelihood_gradient()
     {
       pos1 << training_coords_(i,0), training_coords_(i,1);
       pos2 << training_coords_(j,0), training_coords_(j,1);
-      Vector3d gradient = kernel_.gradient(pos1, pos2);
+      Vector4d gradient = ard_se_kernel_.gradient(pos1, pos2);
       K1(i,j) = gradient(0);
       K2(i,j) = gradient(1);
       K3(i,j) = gradient(2);
+      K4(i,j) = gradient(3);
     }
   }
 
@@ -155,17 +158,21 @@ Matrix<double, Dynamic, 1> Process::log_likelihood_gradient()
   alpha = K_inv_ * training_observs_;
   alpha2 = alpha*alpha.transpose() - K_inv_;
 
-  Matrix<double, Dynamic, 1> res(3,1);
+  Matrix<double, Dynamic, 1> res(4,1);
+
   res(0) = 0.5 * ((alpha2*K1).trace());
   res(1) = 0.5 * ((alpha2*K2).trace());
   res(2) = 0.5 * ((alpha2*K3).trace());
+  res(3) = 0.5 * ((alpha2*K4).trace());
 
   return -res;
 }
 
-Vector3d Process::get_params()
+Vector4d Process::get_params()
 {
-  Vector3d params = kernel_.get_parameters();
+  Vector4d params;
+  params = ard_se_kernel_.get_parameters();
+
   return params;
 }
 
@@ -204,7 +211,8 @@ void Process::create_gp_variance_map(grid_map::GridMap &map)
     compute_cov_vector(x,y);
     Matrix<double, 2, 1> pos;
     pos << x, y;
-    double variance = sqrt(kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_);
+    double variance = 0.0;
+    variance = sqrt(ard_se_kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_);
 
     map.at("gp_variance", *it) = variance;
   }

@@ -57,8 +57,9 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
     }
   }
 
-  Matrix<double, 3, 1> starting_point;
-  starting_point = {2.3, 2.3, -7.0};
+  Matrix<double, 4, 1> starting_point;
+
+  starting_point = {2.3, 2.3, -7.0, -7.0};
 
   bool existing_params = true;
   boost::filesystem::path param_path(path+"/parameters");
@@ -77,7 +78,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
       std::string mac = file_path.substr( file_path.find_last_of("/") + 1 );
       mac = mac.substr(0, mac.find_last_of("."));
       CSVDataLoader data(file_path);
-      Process gp(data.coordinates_matrix_, data.observations_matrix_);
+      Process gp(data.coordinates_matrix_, data.observations_matrix_, 0.0, 0.0,  {0.0,0.0});
 
       if(!existing_params)
       {
@@ -87,8 +88,8 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
         boost::shared_ptr<std::ofstream> new_params = boost::make_shared<std::ofstream>();
         new_params->open(std::string(path+"/parameters/"+mac+".csv").c_str());
         *new_params << "signal_noise, signal_var, lengthscale" << "\n";
-        Eigen::Vector3d parameters = gp.get_params();
-        *new_params << std::to_string(parameters(0))+", "+std::to_string(parameters(1))+", "+std::to_string(parameters(2)) << "\n";
+        Eigen::Vector4d parameters = gp.get_params();
+        *new_params << std::to_string(parameters(0))+", "+std::to_string(parameters(1))+", "+std::to_string(parameters(2))+", "+std::to_string(parameters(3)) << "\n";
         new_params->flush();
       }
       else
@@ -98,21 +99,23 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
         std::string signal_noise;
         std::string signal_var;
         std::string lengthscale;
+        std::string lengthscale2;
         getline(file, value, '\n');
         getline(file, signal_noise, ',');
         getline(file, signal_var, ',');
-        getline(file, lengthscale, '\n');
-        //std::cout << signal_noise << signal_var << lengthscale << std::endl;
-        gp.set_params(std::stod(signal_noise), std::stod(signal_var), std::stod(lengthscale));
+        getline(file, lengthscale, ',');
+        getline(file, lengthscale2, '\n');
+
+        gp.set_params(std::stod(signal_noise), std::stod(signal_var), std::stod(lengthscale), std::stod(lengthscale2));
       }
 
       //std::cout << "loaded params: " << gp.get_params() << std::endl;
 
 
       std::replace(mac.begin(),mac.end(),'_',':');
-      Eigen::Vector3d parameters = gp.get_params();
+      Eigen::Vector4d parameters = gp.get_params();
 
-      if(parameters(0) != 0.0 || parameters(1) != 0.0 || parameters(2) != 0.0)
+      if(parameters(0) != 0.0 || parameters(1) != 0.0 || parameters(2) != 0.0 || parameters(3) != 0.0)
       {
         auto current_gp_it = gp_map_.insert(gp_map_.begin(), std::make_pair(mac, gp));
         if(precompute_)
@@ -334,5 +337,4 @@ bool WifiPositionEstimation::publish_gp_map_service(wifi_localization::PlotGP::R
   grid_map_publisher_.publish(message);
   ROS_INFO("Plot finished.");
   return true;
-
 }
