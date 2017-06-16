@@ -14,7 +14,9 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   use_gps_(false),
   threshold_(1.0),
   pose_(),
-  wifi_data_since_stop_(0)
+  wifi_data_since_stop_(0),
+  initial_gps_x_(0.0),
+  initial_gps_y_(0.0)
 {
   recorded_since_stop.data = false;
 
@@ -26,16 +28,18 @@ Subscriber::Subscriber(ros::NodeHandle &n, float map_resolution, std::string pat
   pose_.pose.pose.orientation.z = 0.0;
   pose_.pose.pose.orientation.w = 0.0;
 
-  gps_pose_.pose.position.x = -1.0;
-  gps_pose_.pose.position.y = -1.0;
-  start_gps_pose_.pose.position.x = -1.0;
-  start_gps_pose_.pose.position.y = -1.0;
+  gps_pose_.pose.pose.position.x = -1.0;
+  gps_pose_.pose.pose.position.y = -1.0;
+  start_gps_pose_.pose.pose.position.x = -1.0;
+  start_gps_pose_.pose.pose.position.y = -1.0;
 
   n.param("/wifi_data_collector/threshold", threshold_, threshold_);
   n.param("/wifi_data_collector/record_only_stopped", record_only_stopped_, record_only_stopped_);
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
   n.param("/wifi_data_collector/record_wifi_signals", record_, record_);
   n.param("/wifi_data_collector/use_gps", use_gps_, use_gps_);
+  n.param("/wifi_data_collector/initial_gps_x", initial_gps_x_, initial_gps_x_);
+  n.param("/wifi_data_collector/initial_gps_y", initial_gps_y_, initial_gps_y_);
 
   // maps.add_csv_data(path_to_csv);
 
@@ -66,10 +70,10 @@ void Subscriber::amclCallbackMethod(const wifi_localization::MaxWeight::ConstPtr
 
 void Subscriber::gpsCallbackMethod(const nav_msgs::Odometry::ConstPtr &msg)
 {
-  if(start_gps_pose_.pose.position.x == -1.0 && start_gps_pose_.pose.position.y == -1.0)
-    start_gps_pose_ = msg->pose;
-  gps_pose_.pose.position.x = msg->pose.pose.position.x - start_gps_pose_.pose.position.x;
-  gps_pose_.pose.position.y = msg->pose.pose.position.y - start_gps_pose_.pose.position.y;
+  if(start_gps_pose_.pose.pose.position.x == -1.0 && start_gps_pose_.pose.pose.position.y == -1.0)
+    start_gps_pose_.pose = msg->pose;
+  gps_pose_.pose.pose.position.x = msg->pose.pose.position.x - start_gps_pose_.pose.pose.position.x + initial_gps_x_;
+  gps_pose_.pose.pose.position.y = msg->pose.pose.position.y - start_gps_pose_.pose.pose.position.y + initial_gps_y_;
 }
 
 void Subscriber::wifiCallbackMethod(const wifi_localization::WifiState::ConstPtr& wifi_data_msg)

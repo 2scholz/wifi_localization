@@ -95,12 +95,6 @@ void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal,
   data->second.insert_data(timestamp, wifi_signal, channel, pose, ssid);
 }
 
-void MapCollection::add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
-                             geometry_msgs::PoseWithCovariance pose)
-{
-
-}
-
 void MapCollection::add_csv_data(std::string path)
 {
   if(path.empty())
@@ -150,6 +144,7 @@ std::map<std::string, MapData>::iterator MapCollection::get_map(std::string mac)
     ros::Publisher wifi_map_pub_4 = n_.advertise<nav_msgs::OccupancyGrid>(mac_pub_name+"_gn", 1000, true);
 
     MapData temp(new_mac, wifi_map_pub, wifi_map_pub_2, wifi_map_pub_3, wifi_map_pub_4);
+
     data = mac_map_.insert(mac_map_.begin(), std::make_pair(mac, temp));
   }
   return data;

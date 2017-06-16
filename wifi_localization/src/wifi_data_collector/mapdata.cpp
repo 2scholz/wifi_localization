@@ -80,7 +80,10 @@ void MapData::insert_data(int timestamp, double wifi_signal, int channel, geomet
       MapData::global_max_ = quality;
   }
 
-  map_.at(grid_x).at(grid_y).push_back(quality);
+  if(grid_x < 0 || grid_y < 0)
+    ROS_WARN("grid_x or grid_y out of range");
+  else
+    map_.at(grid_x).at(grid_y).push_back(quality);
 }
 
 void MapData::load_csv_data(std::string path)

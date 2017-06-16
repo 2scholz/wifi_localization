@@ -18,11 +18,8 @@ int main(int argc, char **argv)
   std::string path_to_csv = "";
   n.param("/wifi_data_collector/path_to_csv", path_to_csv, path_to_csv);
 
-
   nav_msgs::GetMap srv_map;
-
   ros::ServiceClient map_service_client = n.serviceClient<nav_msgs::GetMap>("static_map");
-
 
   nav_msgs::OccupancyGrid amcl_map_;
 
@@ -33,11 +30,11 @@ int main(int argc, char **argv)
   }
   else
   {
-    ROS_ERROR("Failed to call map service. Using default map instead.");
+    ROS_WARN("Failed to call map service. Using default map instead.");
     amcl_map_.info.map_load_time = ros::Time::now();
     amcl_map_.info.resolution = 0.20;
-    amcl_map_.info.height = 5000;
-    amcl_map_.info.width = 5000;
+    amcl_map_.info.height = 1000;
+    amcl_map_.info.width = 1000;
 
     amcl_map_.info.origin.position.x = 0.0;
     amcl_map_.info.origin.position.y = 0.0;

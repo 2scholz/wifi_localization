@@ -1,6 +1,6 @@
 <launch>
     <node name="wifi_position_estimation" pkg="wifi_localization" type="wifi_position_estimation" output="screen">
-        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/BachelorArbeit/catkin_ws/wifi_data/important/14_10_hallway_complete_new_scanner/" />
+        <param name="path_to_csv" type="string" value="/informatik2/students/home/2scholz/TAMS/pioneer3_misc/wifi_data/campus_full_wifi_data" />
         <param name="n_particles" type="int" value="10000" />
         <param name="quality_threshold" type="double" value="1.0" />
         <param name="precompute" type="bool" value="true" />

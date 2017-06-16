@@ -37,18 +37,6 @@ public:
                 geometry_msgs::PoseWithCovarianceStamped pose);
 
   /**
-   * add data to a map using a PoseWithCovariance message. This is used for gps positioning data.
-   * @param timestamp
-   * @param mac
-   * @param wifi_signal
-   * @param channel
-   * @param ssid
-   * @param pose
-   */
-  void add_data(int timestamp, std::string mac, double wifi_signal, int channel, std::string ssid,
-                geometry_msgs::PoseWithCovariance pose);
-
-  /**
    * Add csv data to the maps.
    * @param path Path to folder containing csv files
    */

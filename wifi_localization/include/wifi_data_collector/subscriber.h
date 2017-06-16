@@ -1,7 +1,3 @@
-//
-// Created by 2scholz on 01.08.16.
-//
-
 #ifndef PROJECT_SUBSCRIBER_H
 #define PROJECT_SUBSCRIBER_H
 // Message filters
@@ -93,13 +89,19 @@ private:
   geometry_msgs::PoseWithCovarianceStamped pose_;
 
   /// Last pose received from GPS
-  geometry_msgs::PoseWithCovariance gps_pose_;
+  geometry_msgs::PoseWithCovarianceStamped gps_pose_;
 
   /// The first gps position received. This is used, to compute x,y coordinates that are in the range of a few meters
-  geometry_msgs::PoseWithCovariance start_gps_pose_;
+  geometry_msgs::PoseWithCovarianceStamped start_gps_pose_;
 
   /// Last received max weight. This variable is an indication of the quality and accuracy of amcl
   double max_weight_;
+
+  /// This is the x-coordinate the first incoming GPS data is related to
+  double initial_gps_x_;
+
+  /// This is the y-coordinate the first incoming GPS data is related to
+  double initial_gps_y_;
 
   /// Counts how many times new wifi data was received since the robot came to a halt
   int wifi_data_since_stop_;

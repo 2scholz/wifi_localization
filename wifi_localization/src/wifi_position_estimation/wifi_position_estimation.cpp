@@ -39,7 +39,22 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
   }
   else
   {
-    ROS_ERROR("Failed to call map service");
+    ROS_WARN("Failed to call map service. Using default map instead.");
+    amcl_map_.info.map_load_time = ros::Time::now();
+    amcl_map_.info.resolution = 0.20;
+    amcl_map_.info.height = 1000;
+    amcl_map_.info.width = 1000;
+
+    amcl_map_.info.origin.position.x = 0.0;
+    amcl_map_.info.origin.position.y = 0.0;
+    amcl_map_.info.origin.position.z = 0.0;
+
+    amcl_map_.info.origin.orientation.x = 0.0;
+    amcl_map_.info.origin.orientation.y = 0.0;
+    amcl_map_.info.origin.orientation.z = 0.0;
+    amcl_map_.info.origin.orientation.w = 1.0;
+    amcl_map_.data.resize(amcl_map_.info.width * amcl_map_.info.height);
+
   }
 
   A_ = {amcl_map_.info.origin.position.x, amcl_map_.info.origin.position.y + amcl_map_.info.height * amcl_map_.info.resolution};
@@ -334,6 +349,7 @@ bool WifiPositionEstimation::publish_gp_map_service(wifi_localization::PlotGP::R
   gp_grid_map_.setTimestamp(time.toNSec());
   grid_map_msgs::GridMap message;
   grid_map::GridMapRosConverter::toMessage(gp_grid_map_, message);
+  message.info.header.frame_id = "map";
   grid_map_publisher_.publish(message);
   ROS_INFO("Plot finished.");
   return true;
