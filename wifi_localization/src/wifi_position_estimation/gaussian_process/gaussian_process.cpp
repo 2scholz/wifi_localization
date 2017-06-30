@@ -125,7 +125,7 @@ double Process::log_likelihood()
 
   double ret = (-0.5 * double(training_observs_.transpose() * K_inv_ * training_observs_)) - (0.5 * log_det_K) - ((n/2.0)*log(2.0*M_PI));
 
-  if(isnan(ret))
+  if(std::isnan(ret))
     return std::numeric_limits<double>::infinity();
   return -ret;
 }

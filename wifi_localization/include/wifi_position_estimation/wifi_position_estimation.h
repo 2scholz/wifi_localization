@@ -73,6 +73,15 @@ private:
   /// Determines if the normal distributions for the random points on the map are going to be precomputed.
   bool precompute_;
 
+  /// Initial value for the noise parameter of the gaussian processes
+  double init_noise_;
+  /// Initial value for the variance parameter of the gaussian processes
+  double init_var_;
+  /// Initial value for the first lengthscale parameter of the gaussian processes
+  double init_l1_;
+  /// Initial value for the second lengthscale parameter of the gaussian processes
+  double init_l2_;
+
   /// Map of the precomputed data. Basic structure: map<position, std::map<mac, data_point>>
   PrecomputedDataMap precomputed_data_;
 
