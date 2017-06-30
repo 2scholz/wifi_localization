@@ -16,7 +16,6 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
 
   gp_plot_resolution_ = 1.0;
 
-
   n.param("/wifi_position_estimation/path_to_csv", path, path);
   n.param("/wifi_position_estimation/n_particles", n_particles_, n_particles_);
   n.param("/wifi_position_estimation/quality_threshold", quality_threshold_, quality_threshold_);
@@ -243,7 +242,7 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
         {
           double prob = data->second.gp_->probability_precomputed(data->second.mean_, data->second.variance_, it2.second);
 
-          if(isnan(prob))
+          if(std::isnan(prob))
             prob = 1.0;
           total_prob *= prob;
         }
@@ -275,7 +274,7 @@ geometry_msgs::PoseWithCovarianceStamped WifiPositionEstimation::compute_pose()
         if(data != gp_map_.end())
         {
           double prob = data->second.probability(random_point(0), random_point(1), it.second);
-          if(isnan(prob))
+          if(std::isnan(prob))
             prob = 1.0;
           total_prob *= prob;
         }
