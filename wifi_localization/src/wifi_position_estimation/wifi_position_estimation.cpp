@@ -9,10 +9,23 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
   computing_ = false;
   precompute_ = true;
 
+  init_noise_ = 2.3;
+  init_var_ = 2.3;
+  init_l1_ = -7.0;
+  init_l2_ = -7.0;
+
+  gp_plot_resolution_ = 1.0;
+
+
   n.param("/wifi_position_estimation/path_to_csv", path, path);
   n.param("/wifi_position_estimation/n_particles", n_particles_, n_particles_);
   n.param("/wifi_position_estimation/quality_threshold", quality_threshold_, quality_threshold_);
   n.param("/wifi_position_estimation/precompute", precompute_, precompute_);
+  n.param("/wifi_position_estimation/init_noise", init_noise_, init_noise_);
+  n.param("/wifi_position_estimation/init_var", init_var_, init_var_);
+  n.param("/wifi_position_estimation/init_l1", init_l1_, init_l1_);
+  n.param("/wifi_position_estimation/init_l2", init_l2_, init_l2_);
+  n.param("/wifi_position_estimation/gp_plot_resolution", gp_plot_resolution_, gp_plot_resolution_);
 
   ROS_INFO("particle count: %i", n_particles_);
   if(!path.empty())
@@ -74,7 +87,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
 
   Matrix<double, 4, 1> starting_point;
 
-  starting_point = {2.3, 2.3, -7.0, -7.0};
+  starting_point = {init_noise_, init_var_, init_l1_, init_l2_};
 
   bool existing_params = true;
   boost::filesystem::path param_path(path+"/parameters");
@@ -150,7 +163,7 @@ WifiPositionEstimation::WifiPositionEstimation(ros::NodeHandle &n):precomputed_d
 
   grid_map::GridMapRosConverter::fromOccupancyGrid(amcl_map_, "gp_mean", gp_grid_map_);
   grid_map::GridMapRosConverter::fromOccupancyGrid(amcl_map_, "gp_variance", gp_grid_map_);
-  gp_grid_map_.setGeometry(gp_grid_map_.getLength(),0.20,gp_grid_map_.getPosition());
+  gp_grid_map_.setGeometry(gp_grid_map_.getLength(),gp_plot_resolution_,gp_grid_map_.getPosition());
 
   grid_map_publisher_ = n.advertise<grid_map_msgs::GridMap>("grid_map", 1000, true);
 
