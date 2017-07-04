@@ -41,10 +41,6 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
     }
 
     grad_old = grad;
-    if(grad_old.norm() <= eps_stop)
-    {
-      break;
-    }
     p_.set_params(params);
     double lik = -p_.log_likelihood();
 
@@ -59,6 +55,11 @@ void Optimizer::rprop(Matrix<double, Dynamic, 1> &starting_point, int n, double 
     //std::cout << "likelihood: " << lik << std::endl;
     ROS_INFO("Iteration %d of %d", i+1, n);
     ROS_INFO("Current parameters: %f, %f, %f, %f \n With likelihood: %f \n With gradient: %f, %f, %f, %f", params(0), params(1), params(2), params(3), lik, grad_old(0), grad_old(1), grad_old(2), grad_old(3));
+
+    if(grad_old.norm() <= eps_stop)
+    {
+      break;
+    }
   }
   //std::cout << "best likelihood: " << best << std::endl;
   ROS_INFO("Found parameters: %f, %f, %f, %f \n With likelihood: %f \n With gradient: %f, %f, %f, %f", best_params(0), best_params(1), best_params(2), best_params(3), best, grad_old(0), grad_old(1), grad_old(2), grad_old(3));

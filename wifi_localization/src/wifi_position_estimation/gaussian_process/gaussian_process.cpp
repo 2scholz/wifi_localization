@@ -2,6 +2,7 @@
 #include "wifi_position_estimation/gaussian_process/optimizer.h"
 #include <iostream>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <boost/progress.hpp>
 
 Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dynamic, 1> &training_observs,
                  double signal_noise, double signal_var, Vector2d lengthscale) : ard_se_kernel_(signal_noise, signal_var, lengthscale)
@@ -178,6 +179,9 @@ Vector4d Process::get_params()
 
 void Process::create_gp_mean_map(grid_map::GridMap &map)
 {
+  ROS_INFO("Plotting Mean of Gaussian Process");
+  unsigned long map_size = map.getSize()[0] * map.getSize()[1];
+  boost::progress_display show_progress(map_size);
   for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
     grid_map::Position position;
     map.getPosition(*it, position);
@@ -190,6 +194,7 @@ void Process::create_gp_mean_map(grid_map::GridMap &map)
     //{
     //std::cout << mean << std::endl;
     map.at("gp_mean", *it) = mean;
+    ++show_progress;
   }
 
   //ros::Time time = ros::Time::now();
@@ -203,6 +208,9 @@ void Process::create_gp_mean_map(grid_map::GridMap &map)
 
 void Process::create_gp_variance_map(grid_map::GridMap &map)
 {
+  ROS_INFO("Plotting Variance of Gaussian Process");
+  unsigned long map_size = map.getSize()[0] * map.getSize()[1];
+  boost::progress_display show_progress(map_size);
   for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
     grid_map::Position position;
     map.getPosition(*it, position);
@@ -215,6 +223,7 @@ void Process::create_gp_variance_map(grid_map::GridMap &map)
     variance = sqrt(ard_se_kernel_.covariance(pos, pos) - cov_vector_.transpose() * K_inv_ * cov_vector_);
 
     map.at("gp_variance", *it) = variance;
+    ++show_progress;
   }
 
   //ros::Time time = ros::Time::now();
