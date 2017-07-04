@@ -33,6 +33,7 @@ public:
    */
   void rprop(Matrix<double, Dynamic, 1> &starting_point, int n = 100, double delta0 = 0.1, double delta_min = 1e-6,
              double delta_max = 50.0, double eta_minus = 0.5, double eta_plus = 1.2, double eps_stop = 0.0);
+  void conjugate_gradient(size_t n);
 private:
   Process& p_;
 };

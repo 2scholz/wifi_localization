@@ -14,7 +14,8 @@ Process::Process(Matrix<double, Dynamic, 2> &training_coords, Matrix<double, Dyn
 void Process::train_params(Matrix<double, Dynamic, 1> starting_point)
 {
   Optimizer opt(*this);
-  opt.rprop(starting_point);
+  //opt.rprop(starting_point);
+  opt.conjugate_gradient(4);
 }
 
 void Process::update_covariance_matrix()
