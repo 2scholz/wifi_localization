@@ -52,8 +52,6 @@ catkin_package(
   CATKIN_DEPENDS message_runtime
 )
 
-include_directories("$ENV{EIGEN3_INCLUDE_DIR}")
-
 # include_directories(include/gaussian_process)
 include_directories(include)
 
