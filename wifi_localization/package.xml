@@ -5,9 +5,9 @@
   <description>
     Build a wifi map for coarse positioning in large scale environments with similar physical layout
   </description>
-  <maintainer email="einig@informatik.uni-hamburg.de">Lasse Einig</maintainer>
+  <maintainer email="2scholz@informatik.uni-hamburg.de">Benjamin Scholz</maintainer>
   <license>BSD</license>
-  <author email="einig@informatik.uni-hamburg.de">Lasse Einig</author>
+  <author email="2scholz@informatik.uni-hamburg.de">Benjamin Scholz</author>
   <build_depend>message_generation</build_depend>
   <run_depend>message_runtime</run_depend>
   <buildtool_depend>catkin</buildtool_depend>
